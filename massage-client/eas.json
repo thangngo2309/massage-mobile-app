@@ -1,0 +1,16 @@
+{
+    "build": {
+      "production": {
+        "releaseChannel": "production"
+      }
+    },
+    "submit": {
+      "production": {
+        "ios": {
+          "appleId": "hoangthang23091993@gmail.com",
+          "ascAppId": "6752315705"
+        }
+      }
+    }
+  }
+  

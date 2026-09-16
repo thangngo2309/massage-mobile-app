@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Massage In Room",
+    "slug": "massage-in-room",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+
+    "ios": {
+      "supportsTablet": true,
+      "buildNumber": "3",
+      "bundleIdentifier": "com.anonymous.MassageInRoom",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Massage In Room cần quyền truy cập vị trí để tìm kỹ thuật viên phù hợp với khu vực của bạn."
+      }
+    },
+
+    "android": {
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.anonymous.MassageInRoom"
+    },
+
+    "scheme": "massage-in-room",
+
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      "expo-image-picker"
+    ],
+
+    "experiments": {
+      "typedRoutes": true
+    },
+
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c57efcd3-b879-47eb-8c1f-3dbfdafeba3d"
+      }
+    },
+
+    "owner": "hoangthang2309",
+
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+
+    "updates": {
+      "url": "https://u.expo.dev/c57efcd3-b879-47eb-8c1f-3dbfdafeba3d"
+    }
+  }
+}
