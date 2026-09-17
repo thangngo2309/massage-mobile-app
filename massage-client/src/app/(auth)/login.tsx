@@ -84,7 +84,7 @@ const LoginPage = () => {
               }}
               autoCapitalize="none"
               autoCorrect={false}
-              placeholder="0988617215 hoặc email@example.com"
+              placeholder="Vui lòng nhập số điện thoại hoặc email "
               returnKeyType="next"
             />
 

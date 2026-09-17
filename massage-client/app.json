@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "scheme": "massage-in-room",
 
     "ios": {
       "supportsTablet": true,
@@ -17,24 +18,20 @@
     },
 
     "android": {
+      "package": "com.anonymous.MassageInRoom",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
-      ],
-      "package": "com.anonymous.MassageInRoom"
+      ]
     },
 
-    "scheme": "massage-in-room",
+    "web": {},
 
     "plugins": [
       "expo-router",
       "expo-location",
       "expo-image-picker"
     ],
-
-    "experiments": {
-      "typedRoutes": true
-    },
 
     "extra": {
       "router": {},

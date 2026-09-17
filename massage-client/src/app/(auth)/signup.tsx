@@ -97,7 +97,7 @@ const SignUpPage = () => {
               label="Số điện thoại"
               value={phone}
               onChangeText={setPhone}
-              placeholder="0988617215"
+              placeholder="Vui lòng nhập số điện thoại"
               keyboardType="phone-pad"
               containerStyle={styles.field}
             />
