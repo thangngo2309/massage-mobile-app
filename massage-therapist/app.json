@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Massage In Room - KTV",
+    "slug": "massage-therapist",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "massage-therapist",
+    "ios": {
+      "supportsTablet": true,
+      "buildNumber": "1",
+      "bundleIdentifier": "com.anonymous.MassageInRoomTherapist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.anonymous.MassageInRoomTherapist"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+
+
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c57efcd3-b879-47eb-8c1f-3dbfdafeba3d"
+      }
+    },
+
+    "owner": "hoangthang2309",
+
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+
+    "updates": {
+      "url": "https://u.expo.dev/c57efcd3-b879-47eb-8c1f-3dbfdafeba3d"
+    }
+  }
+}
