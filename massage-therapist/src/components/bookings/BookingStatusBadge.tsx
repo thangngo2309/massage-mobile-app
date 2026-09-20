@@ -1,24 +1,76 @@
 import { StyleSheet, Text, View } from 'react-native';
-import type { BookingStatus } from '@/types';
-import { BOOKING_STATUS_LABEL } from '@/utils/booking-ui';
-import { APP_COLOR } from '@/utils/constant';
 
-const BookingStatusBadge = ({ status }: { status: BookingStatus }) => {
-  const danger = status === 'rejected' || status === 'cancelled' || status === 'expired';
-  const success = status === 'completed';
-  const backgroundColor = danger ? '#FEE2E2' : success ? '#DCFCE7' : APP_COLOR.PRIMARY_LIGHT;
-  const color = danger ? APP_COLOR.DANGER : success ? APP_COLOR.SUCCESS : APP_COLOR.PRIMARY_DARK;
+import {
+  getBookingStatusLabel,
+  getBookingStatusTone,
+  type BookingStatusTone,
+} from '@/constants/booking.constant';
+import type { BookingStatus } from '@/types/booking';
+
+const toneStyles: Record<
+  BookingStatusTone,
+  { backgroundColor: string; color: string }
+> = {
+  neutral: {
+    backgroundColor: '#F1F5F9',
+    color: '#475569',
+  },
+  info: {
+    backgroundColor: '#DBEAFE',
+    color: '#1D4ED8',
+  },
+  warning: {
+    backgroundColor: '#FEF3C7',
+    color: '#B45309',
+  },
+  success: {
+    backgroundColor: '#D1FAE5',
+    color: '#047857',
+  },
+  danger: {
+    backgroundColor: '#FEE2E2',
+    color: '#DC2626',
+  },
+};
+
+export const BookingStatusBadge = ({
+  status,
+}: {
+  status: BookingStatus | string;
+}) => {
+  const tone = getBookingStatusTone(status);
+  const current = toneStyles[tone];
 
   return (
-    <View style={[styles.badge, { backgroundColor }]}>
-      <Text style={[styles.text, { color }]}>{BOOKING_STATUS_LABEL[status] ?? status}</Text>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: current.backgroundColor,
+        },
+      ]}>
+      <Text
+        style={[
+          styles.text,
+          {
+            color: current.color,
+          },
+        ]}>
+        {getBookingStatusLabel(status)}
+      </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  text: { fontSize: 12, fontWeight: '800' },
+  container: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  text: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
 });
-
-export default BookingStatusBadge;

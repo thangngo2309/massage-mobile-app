@@ -1,97 +1,256 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import LoadingState from '@/components/common/LoadingState';
-import AppButton from '@/components/ui/AppButton';
-import AppInput from '@/components/ui/AppInput';
+import { AppButton } from '@/components/ui/AppButton';
+import { AppInput } from '@/components/ui/AppInput';
+import { LoadingState } from '@/components/common/LoadingState';
 import { useUserStore } from '@/store/useUserStore';
-import type { TherapistSelfProfile } from '@/types';
-import { getTherapistSelfAPI, updateAcceptingBookingsAPI, updateTherapistSelfAPI } from '@/utils/api';
+import type { TherapistProfile } from '@/types';
+import {
+  getTherapistProfileAPI,
+  updateAcceptingBookingsAPI,
+  updateTherapistProfileAPI,
+} from '@/utils/api';
 import { getApiErrorMessage } from '@/utils/api-error';
 import { APP_COLOR } from '@/utils/constant';
 
 const AccountPage = () => {
-  const logout = useUserStore(state => state.logout);
-  const [profile, setProfile] = useState<TherapistSelfProfile | null>(null);
+  const logout = useUserStore((state) => state.logout);
+
+  const [profile, setProfile] = useState<TherapistProfile | null>(null);
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [experienceYears, setExperienceYears] = useState('0');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [updatingAccepting, setUpdatingAccepting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
+
     try {
-      const data = await getTherapistSelfAPI(); setProfile(data); setFullName(data.fullName ?? ''); setBio(data.bio ?? ''); setExperienceYears(String(data.experienceYears ?? 0));
-    } catch (e) { setError(getApiErrorMessage(e)); }
-    finally { setLoading(false); }
+      const data = await getTherapistProfileAPI();
+
+      setProfile(data);
+      setFullName(data.fullName);
+      setBio(data.bio || '');
+      setExperienceYears(String(data.experienceYears ?? 0));
+    } catch (loadError) {
+      setError(getApiErrorMessage(loadError));
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const save = async () => {
-    const years = Number(experienceYears);
-    if (!fullName.trim()) return setError('Họ tên không được để trống.');
-    if (!Number.isFinite(years) || years < 0) return setError('Số năm kinh nghiệm không hợp lệ.');
-    setSaving(true); setError(''); setMessage('');
-    try { const updated = await updateTherapistSelfAPI({ fullName: fullName.trim(), bio: bio.trim(), experienceYears: years }); setProfile(current => ({ ...(current ?? updated), ...updated })); setMessage('Đã cập nhật hồ sơ.'); }
-    catch (e) { setError(getApiErrorMessage(e, 'Không thể cập nhật hồ sơ.')); }
-    finally { setSaving(false); }
+    setSaving(true);
+    setError(null);
+
+    try {
+      const updated = await updateTherapistProfileAPI({
+        fullName: fullName.trim(),
+        bio: bio.trim() || null,
+        experienceYears: Number(experienceYears) || 0,
+      });
+
+      setProfile(updated);
+    } catch (saveError) {
+      setError(getApiErrorMessage(saveError));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggle = async (value: boolean) => {
-    if (!profile) return;
-    if (value && profile.verificationStatus !== 'verified') { setError('KTV cần được xác minh trước khi bật nhận booking.'); return; }
-    setSaving(true); setError('');
-    try { const updated = await updateAcceptingBookingsAPI(value); setProfile(current => ({ ...(current ?? updated), ...updated, isAcceptingBookings: value })); }
-    catch (e) { setError(getApiErrorMessage(e)); }
-    finally { setSaving(false); }
+  const toggleAccepting = async (value: boolean) => {
+    setUpdatingAccepting(true);
+    setError(null);
+
+    try {
+      setProfile(await updateAcceptingBookingsAPI(value));
+    } catch (toggleError) {
+      setError(getApiErrorMessage(toggleError));
+    } finally {
+      setUpdatingAccepting(false);
+    }
   };
 
-  if (loading) return <SafeAreaView style={styles.container}><LoadingState /></SafeAreaView>;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadingState />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Tài khoản KTV</Text><Text style={styles.subtitle}>Hồ sơ công khai và trạng thái hoạt động của bạn.</Text>
-        <View style={styles.statusCard}>
-          <View style={styles.flex}><Text style={styles.statusTitle}>Nhận booking</Text><Text style={styles.statusMeta}>Xác minh: {profile?.verificationStatus ?? 'pending'}</Text></View>
-          <Switch value={Boolean(profile?.isAcceptingBookings)} onValueChange={value => void toggle(value)} disabled={saving} />
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Tài khoản</Text>
+        <Text style={styles.description}>
+          Quản lý hồ sơ kỹ thuật viên và trạng thái nhận booking.
+        </Text>
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <View style={styles.summary}>
+          <Text style={styles.summaryName}>{profile?.fullName}</Text>
+          <Text style={styles.summaryMeta}>{profile?.phone}</Text>
+          <Text style={styles.summaryMeta}>{profile?.email || ''}</Text>
+
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Xác minh</Text>
+            <Text style={styles.statusValue}>{profile?.verificationStatus}</Text>
+          </View>
+
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>Đánh giá</Text>
+            <Text style={styles.statusValue}>
+              {Number(profile?.ratingAverage ?? 0).toFixed(2)} (
+              {profile?.ratingCount ?? 0})
+            </Text>
+          </View>
         </View>
-        <View style={styles.card}>
-          <AppInput label="Họ và tên" value={fullName} onChangeText={setFullName} />
-          <AppInput label="Số năm kinh nghiệm" value={experienceYears} onChangeText={setExperienceYears} keyboardType="number-pad" />
-          <Text style={styles.label}>Giới thiệu</Text>
-          <TextInput value={bio} onChangeText={setBio} multiline numberOfLines={5} textAlignVertical="top" placeholder="Giới thiệu kinh nghiệm, phong cách phục vụ..." style={styles.bio} />
-          {!!profile?.phone && <Text style={styles.meta}>SĐT: {profile.phone}</Text>}
-          {!!profile?.email && <Text style={styles.meta}>Email: {profile.email}</Text>}
-          {!!error && <Text style={styles.error}>{error}</Text>}
-          {!!message && <Text style={styles.success}>{message}</Text>}
-          <AppButton title="Lưu hồ sơ" loading={saving} onPress={() => void save()} />
+
+        <View style={styles.acceptCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.acceptTitle}>Nhận booking</Text>
+            <Text style={styles.acceptDescription}>
+              Chỉ KTV đã verified mới có thể bật chức năng này.
+            </Text>
+          </View>
+
+          <Switch
+            value={profile?.isAcceptingBookings ?? false}
+            disabled={updatingAccepting}
+            onValueChange={toggleAccepting}
+            trackColor={{
+              true: APP_COLOR.PRIMARY,
+            }}
+          />
         </View>
-        <AppButton title="Đăng xuất" variant="danger" style={styles.logout} onPress={() => void logout()} />
+
+        <View style={styles.form}>
+          <AppInput
+            label="Họ và tên"
+            value={fullName}
+            onChangeText={setFullName}
+          />
+
+          <AppInput label="Giới thiệu" value={bio} onChangeText={setBio} multiline />
+
+          <AppInput
+            label="Số năm kinh nghiệm"
+            value={experienceYears}
+            onChangeText={setExperienceYears}
+            keyboardType="number-pad"
+          />
+
+          <AppButton title="Lưu hồ sơ" loading={saving} onPress={save} />
+
+          <AppButton
+            title="Đăng xuất"
+            variant="danger"
+            onPress={() => void logout()}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: APP_COLOR.BACKGROUND },
-  content: { padding: 16, paddingBottom: 110 },
-  title: { color: APP_COLOR.TEXT, fontSize: 26, fontWeight: '900' },
-  subtitle: { color: APP_COLOR.MUTED, lineHeight: 20, marginTop: 6 },
-  statusCard: { backgroundColor: APP_COLOR.PRIMARY, borderRadius: 18, padding: 16, marginTop: 16, flexDirection: 'row', alignItems: 'center' },
-  flex: { flex: 1 },
-  statusTitle: { color: '#fff', fontWeight: '900', fontSize: 17 },
-  statusMeta: { color: '#D1FAE5', marginTop: 5 },
-  card: { backgroundColor: '#fff', borderWidth: 1, borderColor: APP_COLOR.BORDER, borderRadius: 16, padding: 16, marginTop: 14 },
-  label: { color: APP_COLOR.TEXT, fontSize: 13, fontWeight: '700', marginBottom: 7 },
-  bio: { minHeight: 112, borderRadius: 13, borderWidth: 1, borderColor: APP_COLOR.BORDER, backgroundColor: '#fff', padding: 12, color: APP_COLOR.TEXT },
-  meta: { color: APP_COLOR.MUTED, marginTop: 9 },
-  error: { color: APP_COLOR.DANGER, marginVertical: 10 },
-  success: { color: APP_COLOR.SUCCESS, marginVertical: 10, fontWeight: '700' },
-  logout: { marginTop: 18 },
+  container: {
+    flex: 1,
+    backgroundColor: APP_COLOR.BACKGROUND,
+  },
+  content: {
+    padding: 18,
+    paddingBottom: 110,
+  },
+  title: {
+    color: APP_COLOR.TEXT,
+    fontSize: 30,
+    fontWeight: '900',
+  },
+  description: {
+    marginTop: 6,
+    color: APP_COLOR.MUTED,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  error: {
+    marginTop: 12,
+    color: APP_COLOR.DANGER,
+    fontSize: 13,
+  },
+  summary: {
+    marginTop: 18,
+    padding: 17,
+    borderRadius: 18,
+    backgroundColor: APP_COLOR.PRIMARY,
+    gap: 7,
+  },
+  summaryName: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  summaryMeta: {
+    color: '#CCFBF1',
+    fontSize: 13,
+  },
+  statusRow: {
+    marginTop: 3,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statusLabel: {
+    color: '#99F6E4',
+    fontSize: 13,
+  },
+  statusValue: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  acceptCard: {
+    marginTop: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: APP_COLOR.BORDER,
+    backgroundColor: APP_COLOR.SURFACE,
+    gap: 12,
+  },
+  acceptTitle: {
+    color: APP_COLOR.TEXT,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  acceptDescription: {
+    marginTop: 4,
+    color: APP_COLOR.MUTED,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  form: {
+    marginTop: 18,
+    gap: 14,
+  },
 });
 
 export default AccountPage;

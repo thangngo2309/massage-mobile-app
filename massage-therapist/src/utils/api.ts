@@ -1,126 +1,151 @@
+import api from '@/utils/axios.customize';
+
 import type {
   AuthResponse,
   AuthUser,
+  Booking,
+  BookingListResponse,
   BookingStatus,
-  CreateScheduleExceptionPayload,
   LoginPayload,
   RegisterPayload,
-  TherapistBooking,
-  TherapistScheduleException,
-  TherapistSelfProfile,
-  TherapistServiceItem,
-  TherapistWorkingHour,
-  WorkingHourInput,
+  ScheduleException,
+  TherapistProfile,
+  TherapistService,
+  WorkingHour,
 } from '@/types';
-import api from '@/utils/axios.customize';
-
-const unwrap = <T>(payload: any): T => (payload?.data ?? payload) as T;
-
-const asItems = <T>(payload: any): T[] => {
-  const data = unwrap<any>(payload);
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
-};
 
 export const loginAPI = async (payload: LoginPayload): Promise<AuthResponse> => {
   const response = await api.post('/auth/login', payload);
-  return unwrap<AuthResponse>(response.data);
+  return response.data;
 };
 
-export const registerAPI = async (payload: RegisterPayload): Promise<AuthResponse> => {
+export const registerAPI = async (
+  payload: RegisterPayload,
+): Promise<AuthResponse> => {
   const response = await api.post('/auth/register', payload);
-  return unwrap<AuthResponse>(response.data);
+  return response.data;
 };
 
-export const logoutAPI = async (refreshToken: string) => {
+export const meAPI = async (): Promise<AuthUser> => {
+  const response = await api.get('/auth/me');
+  return response.data;
+};
+
+export const logoutAPI = async (refreshToken: string): Promise<void> => {
   await api.post('/auth/logout', { refreshToken });
 };
 
-export const getAccountAPI = async (): Promise<AuthUser> => {
-  const response = await api.get('/auth/me');
-  return unwrap<AuthUser>(response.data);
-};
-
-export const getTherapistSelfAPI = async (): Promise<TherapistSelfProfile> => {
+export const getTherapistProfileAPI = async (): Promise<TherapistProfile> => {
   const response = await api.get('/therapist/me');
-  return unwrap<TherapistSelfProfile>(response.data);
+  return response.data;
 };
 
-export const updateTherapistSelfAPI = async (payload: {
+export const updateTherapistProfileAPI = async (payload: {
   fullName: string;
-  bio?: string;
-  experienceYears: number;
-}): Promise<TherapistSelfProfile> => {
+  bio?: string | null;
+  experienceYears?: number | null;
+}): Promise<TherapistProfile> => {
   const response = await api.patch('/therapist/me', payload);
-  return unwrap<TherapistSelfProfile>(response.data);
+  return response.data;
 };
 
 export const updateAcceptingBookingsAPI = async (
   isAcceptingBookings: boolean,
-): Promise<TherapistSelfProfile> => {
+): Promise<TherapistProfile> => {
   const response = await api.patch('/therapist/me/accepting-bookings', {
     isAcceptingBookings,
   });
-  return unwrap<TherapistSelfProfile>(response.data);
+  return response.data;
 };
 
-export const getTherapistServicesAPI = async (): Promise<TherapistServiceItem[]> => {
+export const getTherapistServicesAPI = async (): Promise<
+  TherapistService[]
+> => {
   const response = await api.get('/therapist/me/services');
-  return asItems<TherapistServiceItem>(response.data);
+  return response.data;
 };
 
 export const updateTherapistServiceAPI = async (
   id: number,
-  payload: { price: number; isActive: boolean },
-): Promise<TherapistServiceItem> => {
+  payload: {
+    price: number;
+    isActive: boolean;
+  },
+): Promise<TherapistService> => {
   const response = await api.patch(`/therapist/me/services/${id}`, payload);
-  return unwrap<TherapistServiceItem>(response.data);
+  return response.data;
 };
 
-export const getWorkingHoursAPI = async (): Promise<TherapistWorkingHour[]> => {
+export const getWorkingHoursAPI = async (): Promise<WorkingHour[]> => {
   const response = await api.get('/therapist/me/working-hours');
-  return asItems<TherapistWorkingHour>(response.data);
+  return response.data;
 };
 
 export const replaceWorkingHoursAPI = async (
-  items: WorkingHourInput[],
-): Promise<TherapistWorkingHour[]> => {
-  const response = await api.put('/therapist/me/working-hours', { items });
-  return asItems<TherapistWorkingHour>(response.data);
+  items: WorkingHour[],
+): Promise<WorkingHour[]> => {
+  const response = await api.put('/therapist/me/working-hours', {
+    items: items.map((item) => ({
+      dayOfWeek: item.dayOfWeek,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      isActive: item.isActive,
+    })),
+  });
+
+  return response.data;
 };
 
-export const getScheduleExceptionsAPI = async (): Promise<TherapistScheduleException[]> => {
+export const getScheduleExceptionsAPI = async (): Promise<
+  ScheduleException[]
+> => {
   const response = await api.get('/therapist/me/schedule-exceptions');
-  return asItems<TherapistScheduleException>(response.data);
+  return response.data;
 };
 
-export const createScheduleExceptionAPI = async (
-  payload: CreateScheduleExceptionPayload,
-): Promise<TherapistScheduleException> => {
+export const createScheduleExceptionAPI = async (payload: {
+  date: string;
+  isDayOff: boolean;
+  startTime?: string;
+  endTime?: string;
+  note?: string;
+}): Promise<ScheduleException> => {
   const response = await api.post('/therapist/me/schedule-exceptions', payload);
-  return unwrap<TherapistScheduleException>(response.data);
+  return response.data;
 };
 
-export const deleteScheduleExceptionAPI = async (id: number) => {
+export const deleteScheduleExceptionAPI = async (id: number): Promise<void> => {
   await api.delete(`/therapist/me/schedule-exceptions/${id}`);
 };
 
-export const getTherapistBookingsAPI = async (): Promise<TherapistBooking[]> => {
-  const response = await api.get('/therapist/bookings');
-  return asItems<TherapistBooking>(response.data);
+export const getTherapistBookingsAPI = async (params?: {
+  page?: number;
+  limit?: number;
+  status?: BookingStatus;
+  from?: string;
+  to?: string;
+}): Promise<BookingListResponse> => {
+  const response = await api.get('/therapist/bookings', {
+    params,
+  });
+
+  return response.data;
 };
 
-export const getTherapistBookingAPI = async (id: number): Promise<TherapistBooking> => {
+export const getTherapistBookingAPI = async (id: number): Promise<Booking> => {
   const response = await api.get(`/therapist/bookings/${id}`);
-  return unwrap<TherapistBooking>(response.data);
+  return response.data;
 };
 
 export const updateTherapistBookingStatusAPI = async (
   id: number,
   status: BookingStatus,
-): Promise<TherapistBooking> => {
-  const response = await api.patch(`/therapist/bookings/${id}/status`, { status });
-  return unwrap<TherapistBooking>(response.data);
+  reason?: string,
+): Promise<Booking> => {
+  const response = await api.patch(`/therapist/bookings/${id}/status`, {
+    status,
+    reason: reason?.trim() || undefined,
+  });
+
+  return response.data;
 };

@@ -1,20 +1,38 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
+
 import { APP_COLOR } from '@/utils/constant';
 
-const EmptyState = ({ title, description }: { title: string; description?: string }) => (
-  <View style={styles.wrap}>
-    <View style={styles.icon}><Ionicons name="file-tray-outline" size={24} color={APP_COLOR.PRIMARY} /></View>
+export const EmptyState = ({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) => (
+  <View style={styles.container}>
+    <Ionicons name="file-tray-outline" size={38} color="#94A3B8" />
     <Text style={styles.title}>{title}</Text>
-    {!!description && <Text style={styles.description}>{description}</Text>}
+    {description ? <Text style={styles.description}>{description}</Text> : null}
   </View>
 );
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', padding: 28 },
-  icon: { width: 52, height: 52, borderRadius: 18, backgroundColor: APP_COLOR.PRIMARY_LIGHT, alignItems: 'center', justifyContent: 'center' },
-  title: { marginTop: 12, color: APP_COLOR.TEXT, fontSize: 16, fontWeight: '800', textAlign: 'center' },
-  description: { marginTop: 6, color: APP_COLOR.MUTED, lineHeight: 20, textAlign: 'center' },
+  container: {
+    paddingVertical: 44,
+    alignItems: 'center',
+    gap: 8,
+  },
+  title: {
+    color: APP_COLOR.TEXT,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  description: {
+    maxWidth: 280,
+    color: APP_COLOR.MUTED,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
 });
-
-export default EmptyState;

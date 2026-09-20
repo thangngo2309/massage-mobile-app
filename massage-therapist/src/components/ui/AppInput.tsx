@@ -1,54 +1,91 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, type TextInputProps } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputProps,
+} from 'react-native';
 
 import { APP_COLOR } from '@/utils/constant';
 
 type Props = TextInputProps & {
   label?: string;
-  error?: string;
+  error?: string | null;
+  password?: boolean;
 };
 
-const AppInput = ({ label, error, secureTextEntry, style, ...props }: Props) => {
-  const [hidden, setHidden] = useState(Boolean(secureTextEntry));
+export const AppInput = ({
+  label,
+  error,
+  password = false,
+  style,
+  ...props
+}: Props) => {
+  const [secure, setSecure] = useState(password);
 
   return (
-    <View style={styles.wrap}>
-      {!!label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputWrap, !!error && styles.errorBorder]}>
+    <View style={styles.wrapper}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+
+      <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
         <TextInput
-          placeholderTextColor="#94A3B8"
-          secureTextEntry={secureTextEntry ? hidden : false}
-          style={[styles.input, style]}
           {...props}
+          secureTextEntry={secure}
+          placeholderTextColor="#94A3B8"
+          style={[styles.input, style]}
         />
-        {secureTextEntry ? (
-          <TouchableOpacity onPress={() => setHidden(value => !value)} style={styles.eye}>
-            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={21} color={APP_COLOR.MUTED} />
-          </TouchableOpacity>
+
+        {password ? (
+          <Pressable
+            hitSlop={10}
+            onPress={() => setSecure((value) => !value)}>
+            <Ionicons
+              name={secure ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={APP_COLOR.MUTED}
+            />
+          </Pressable>
         ) : null}
       </View>
-      {!!error && <Text style={styles.error}>{error}</Text>}
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 13 },
-  label: { color: APP_COLOR.TEXT, fontSize: 13, fontWeight: '700', marginBottom: 7 },
-  inputWrap: {
+  wrapper: {
+    gap: 7,
+  },
+  label: {
+    color: APP_COLOR.TEXT,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  inputWrapper: {
     minHeight: 50,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: APP_COLOR.BORDER,
-    borderRadius: 13,
+    backgroundColor: APP_COLOR.SURFACE,
   },
-  input: { flex: 1, minHeight: 48, paddingHorizontal: 14, color: APP_COLOR.TEXT, fontSize: 15 },
-  eye: { paddingHorizontal: 12, paddingVertical: 10 },
-  errorBorder: { borderColor: APP_COLOR.DANGER },
-  error: { color: APP_COLOR.DANGER, fontSize: 12, marginTop: 5 },
+  inputError: {
+    borderColor: '#FCA5A5',
+  },
+  input: {
+    flex: 1,
+    color: APP_COLOR.TEXT,
+    fontSize: 15,
+    paddingVertical: 12,
+  },
+  error: {
+    color: APP_COLOR.DANGER,
+    fontSize: 12,
+  },
 });
-
-export default AppInput;

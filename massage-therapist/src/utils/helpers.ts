@@ -1,16 +1,24 @@
-export const formatCurrency = (value: number | string | null | undefined) => {
+export const formatCurrency = (
+  value: number | string | null | undefined,
+): string => {
   const amount = Number(value ?? 0);
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
+
+  return `${new Intl.NumberFormat('vi-VN').format(
+    Number.isFinite(amount) ? amount : 0,
+  )} đ`;
 };
 
-export const formatDateTime = (value?: string | null) => {
-  if (!value) return '';
+export const formatDateTime = (value?: string | null): string => {
+  if (!value) {
+    return '';
+  }
+
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
   return new Intl.DateTimeFormat('vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -20,24 +28,18 @@ export const formatDateTime = (value?: string | null) => {
   }).format(date);
 };
 
-export const formatDate = (value?: string | null) => {
-  if (!value) return '';
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(date);
+export const toLocalPhoneNumber = (phone?: string | null): string => {
+  if (!phone) return '';
+  if (phone.startsWith('+84')) return `0${phone.slice(3)}`;
+  return phone;
 };
 
-export const asNumber = (value: unknown, fallback = 0) => {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : fallback;
+export const normalizeVietnamPhone = (phone: string): string => {
+  const value = phone.trim().replace(/\s+/g, '');
+
+  if (value.startsWith('+84')) return value;
+  if (value.startsWith('84')) return `+${value}`;
+  if (value.startsWith('0')) return `+84${value.slice(1)}`;
+
+  return value;
 };
-
-export const getClientName = (booking: any) =>
-  booking?.client?.fullName ?? booking?.client?.user?.fullName ?? 'Khách hàng';
-
-export const getClientPhone = (booking: any) =>
-  booking?.client?.phone ?? booking?.client?.user?.phone ?? '';

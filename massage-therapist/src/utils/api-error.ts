@@ -1,17 +1,23 @@
-export const getApiErrorMessage = (error: any, fallback = 'Đã xảy ra lỗi.') => {
-  const message = error?.response?.data?.message;
+import axios from 'axios';
 
-  if (Array.isArray(message)) {
-    return message.join('\n');
+export const getApiErrorMessage = (
+  error: unknown,
+  fallback = 'Có lỗi xảy ra. Vui lòng thử lại.',
+): string => {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error ? error.message : fallback;
   }
 
-  if (typeof message === 'string' && message.trim()) {
-    return message;
+  const data = error.response?.data as
+    | {
+        message?: string | string[];
+        error?: string;
+      }
+    | undefined;
+
+  if (Array.isArray(data?.message)) {
+    return data.message.join('\n');
   }
 
-  if (typeof error?.message === 'string' && error.message.trim()) {
-    return error.message;
-  }
-
-  return fallback;
+  return data?.message || data?.error || error.message || fallback;
 };

@@ -1,52 +1,98 @@
-import type { ComponentProps } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  type PressableProps,
+  type ViewStyle,
+} from 'react-native';
 
 import { APP_COLOR } from '@/utils/constant';
 
-type Props = Omit<ComponentProps<typeof TouchableOpacity>, 'children'> & {
+type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
+
+type Props = PressableProps & {
   title: string;
   loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  variant?: Variant;
+  style?: ViewStyle;
 };
 
-const AppButton = ({ title, loading, disabled, variant = 'primary', style, ...props }: Props) => {
+const variantConfig: Record<
+  Variant,
+  { backgroundColor: string; textColor: string; borderColor?: string }
+> = {
+  primary: {
+    backgroundColor: APP_COLOR.PRIMARY,
+    textColor: '#FFFFFF',
+  },
+  secondary: {
+    backgroundColor: APP_COLOR.SURFACE,
+    textColor: APP_COLOR.PRIMARY,
+    borderColor: APP_COLOR.PRIMARY,
+  },
+  danger: {
+    backgroundColor: '#FEE2E2',
+    textColor: APP_COLOR.DANGER,
+    borderColor: '#FCA5A5',
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    textColor: APP_COLOR.PRIMARY,
+  },
+};
+
+export const AppButton = ({
+  title,
+  loading = false,
+  variant = 'primary',
+  disabled,
+  style,
+  ...props
+}: Props) => {
+  const config = variantConfig[variant];
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
+    <Pressable
+      {...props}
       disabled={disabled || loading}
-      style={[
+      style={({ pressed }) => [
         styles.button,
-        styles[variant],
-        (disabled || loading) && styles.disabled,
+        {
+          backgroundColor: config.backgroundColor,
+          borderColor: config.borderColor || config.backgroundColor,
+          opacity: disabled || loading ? 0.55 : pressed ? 0.82 : 1,
+        },
         style,
-      ]}
-      {...props}>
+      ]}>
       {loading ? (
-        <ActivityIndicator color={variant === 'secondary' || variant === 'ghost' ? APP_COLOR.PRIMARY : '#fff'} />
+        <ActivityIndicator color={config.textColor} />
       ) : (
-        <Text style={[styles.text, (variant === 'secondary' || variant === 'ghost') && styles.darkText]}>
+        <Text
+          style={[
+            styles.text,
+            {
+              color: config.textColor,
+            },
+          ]}>
           {title}
         </Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    borderRadius: 13,
-    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 18,
   },
-  primary: { backgroundColor: APP_COLOR.PRIMARY },
-  secondary: { backgroundColor: '#fff', borderWidth: 1, borderColor: APP_COLOR.BORDER },
-  danger: { backgroundColor: APP_COLOR.DANGER },
-  ghost: { backgroundColor: APP_COLOR.PRIMARY_LIGHT },
-  disabled: { opacity: 0.55 },
-  text: { color: '#fff', fontSize: 15, fontWeight: '800' },
-  darkText: { color: APP_COLOR.PRIMARY_DARK },
+  text: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
 });
-
-export default AppButton;

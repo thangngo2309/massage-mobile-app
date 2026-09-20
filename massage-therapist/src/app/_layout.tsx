@@ -22,11 +22,27 @@ const RootLayout = () => {
     <SafeAreaProvider>
       <ZustandProvider>
         <ThemeProvider value={theme}>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: APP_COLOR.BACKGROUND } }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: {
+                backgroundColor: APP_COLOR.BACKGROUND,
+              },
+            }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="bookings/[id]" />
+            <Stack.Screen
+              name="bookings/[id]"
+              options={{
+                headerShown: true,
+                title: 'Chi tiết booking',
+                headerTintColor: APP_COLOR.TEXT,
+                headerStyle: {
+                  backgroundColor: APP_COLOR.SURFACE,
+                },
+              }}
+            />
           </Stack>
         </ThemeProvider>
       </ZustandProvider>

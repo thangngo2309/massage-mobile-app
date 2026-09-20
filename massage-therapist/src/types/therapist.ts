@@ -1,72 +1,51 @@
-export type TherapistVerificationStatus = 'pending' | 'verified' | 'rejected';
-
-export interface TherapistSelfProfile {
+export type TherapistProfile = {
   id: number;
-  userId?: number;
+  userId: number;
   fullName: string;
-  phone?: string | null;
-  email?: string | null;
-  bio?: string | null;
-  experienceYears?: number | null;
-  verificationStatus: TherapistVerificationStatus;
+  phone: string;
+  email: string | null;
+  bio: string | null;
+  gender: 'unknown' | 'male' | 'female' | 'other';
+  dateOfBirth: string | null;
+  experienceYears: number;
+  verificationStatus: 'pending' | 'verified' | 'rejected';
+  onlineStatus: 'offline' | 'online' | 'busy';
   isAcceptingBookings: boolean;
-  averageRating?: number | string | null;
-  ratingCount?: number | null;
-  completedBookings?: number | null;
-  user?: {
-    id?: number;
-    fullName?: string;
-    phone?: string;
-    email?: string | null;
-  } | null;
-}
+  serviceRadiusKm: number;
+  ratingAverage: number;
+  ratingCount: number;
+  completedBookings: number;
+  createdAt: string;
+  updatedAt: string;
+};
 
-export interface TherapistServiceItem {
+export type TherapistService = {
   id: number;
-  therapistId?: number;
+  therapistId: number;
   serviceOptionId: number;
-  price: number | string;
-  platformFeeRate?: number | string | null;
+  serviceName: string;
+  optionLabel: string;
+  durationMinutes: number;
+  defaultPrice: number;
+  price: number;
+  platformFeeRate: number;
   isActive: boolean;
-  serviceOption?: {
-    id: number;
-    name?: string;
-    durationMinutes?: number;
-    service?: {
-      id?: number;
-      name?: string;
-    } | null;
-  } | null;
-}
+};
 
-export interface TherapistWorkingHour {
+export type WorkingHour = {
   id?: number;
   dayOfWeek: number;
   startTime: string;
   endTime: string;
-  isActive?: boolean;
-}
-
-export interface WorkingHourInput {
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
   isActive: boolean;
-}
+};
 
-export interface TherapistScheduleException {
+export type ScheduleException = {
   id: number;
   date: string;
   isDayOff: boolean;
-  startTime?: string | null;
-  endTime?: string | null;
-  reason?: string | null;
-}
-
-export interface CreateScheduleExceptionPayload {
-  date: string;
-  isDayOff: boolean;
-  startTime?: string;
-  endTime?: string;
-  reason?: string;
-}
+  startTime: string | null;
+  endTime: string | null;
+  note: string | null;
+  createdAt: string;
+};
