@@ -1,0 +1,27 @@
+{
+  "build": {
+    "production": {
+      "releaseChannel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dev.in-home-massage-247.com/api",
+        "EXPO_PUBLIC_ANDROID_API_URL": "https://dev.in-home-massage-247.com/api",
+        "EXPO_PUBLIC_IOS_API_URL": "https://dev.in-home-massage-247.com/api"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "developer@gpcnhoangan.com",
+        "ascAppId": "6817832600",
+        "appleTeamId": "C9TJ8NQJKZ",
+        "ascApiKeyPath": "./AuthKey_L3Q9M226X4.p8",
+        "ascApiKeyIssuerId": "e723c54e-1c2b-4514-9fbf-a0499ba4e566",
+        "ascApiKeyId": "L3Q9M226X4"
+      }
+    }
+  }
+}

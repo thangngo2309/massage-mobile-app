@@ -18,19 +18,16 @@
       "supportsTablet": true,
       "buildNumber": "1",
       "bundleIdentifier": "com.hoangan.inhomemassage247.client",
-
       "infoPlist": {
         "CFBundleDisplayName": "InHome 247 Khách",
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "In Home Massage 247 cần quyền truy cập vị trí để tìm kỹ thuật viên phù hợp và xác định địa điểm phục vụ.",
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
+        "NSLocationWhenInUseUsageDescription": "In Home Massage 247 cần quyền truy cập vị trí để tìm kỹ thuật viên phù hợp và xác định địa điểm phục vụ."
       }
     },
 
     "android": {
-      "package": "com.anonymous.MassageInRoom",
+      "package": "com.hoangan.inhomemassage247.client",
+      "versionCode": 1,
 
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/splash-icon-client-small.png",

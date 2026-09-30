@@ -1,31 +1,62 @@
 {
   "expo": {
-    "name": "Massage In Room - KTV",
-    "slug": "massage-therapist",
+    "name": "In Home Massage 247 - KTV",
+    "slug": "in-home-massage-247-therapist",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./src/assets/splash-icon-therapist-small.png",
     "userInterfaceStyle": "light",
-    "scheme": "massage-therapist",
+    "scheme": "in-home-massage-247-therapist",
+
+    "splash": {
+      "image": "./src/assets/splash-icon-therapist-small.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1",
-      "bundleIdentifier": "com.anonymous.MassageInRoomTherapist",
+      "buildNumber": "2",
+      "bundleIdentifier": "com.hoangan.inhomemassage247.therapist",
       "infoPlist": {
+        "CFBundleDisplayName": "InHome 247 KTV",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
+
     "android": {
-      "package": "com.anonymous.MassageInRoomTherapist"
+      "package": "com.hoangan.inhomemassage247.therapist",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/splash-icon-therapist-small.png",
+        "backgroundColor": "#ffffff"
+      }
     },
+
+    "web": {
+      "favicon": "./src/assets/splash-icon-therapist-small.png"
+    },
+
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./src/assets/splash-icon-therapist-small.png",
+          "color": "#ffffff",
+          "sounds": ["./src/assets/sounds/notification.mp3"]
+        }
+      ]
     ],
 
+    "experiments": {
+      "typedRoutes": true
+    },
 
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c57efcd3-b879-47eb-8c1f-3dbfdafeba3d"
+        "projectId": "1c028fd0-262b-47e0-acf5-34ed87a4a3fa"
       }
     },
 
@@ -36,7 +67,7 @@
     },
 
     "updates": {
-      "url": "https://u.expo.dev/c57efcd3-b879-47eb-8c1f-3dbfdafeba3d"
+      "url": "https://u.expo.dev/1c028fd0-262b-47e0-acf5-34ed87a4a3fa"
     }
   }
 }
