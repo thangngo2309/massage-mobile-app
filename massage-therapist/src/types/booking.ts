@@ -15,54 +15,73 @@ export type BookingStatus =
 
 export type BookingUser = {
   id?: number;
-  fullName?: string;
-  phone?: string;
+  fullName?: string | null;
+  phone?: string | null;
   email?: string | null;
+  avatarUrl?: string | null;
+};
+
+export type BookingClient = {
+  id?: number;
+  userId?: number;
+  fullName?: string | null;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  user?: BookingUser;
+};
+
+export type BookingTherapist = {
+  id?: number;
+  userId?: number;
+  fullName?: string | null;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  user?: BookingUser;
+};
+
+export type BookingStatusHistory = {
+  id: number;
+  bookingId?: number;
+  fromStatus?: BookingStatus | null;
+  toStatus: BookingStatus;
+  note?: string | null;
+  reason?: string | null;
+  changedByUserId?: number | null;
+  changedByUser?: BookingUser | null;
+  createdAt: string;
 };
 
 export type Booking = {
   id: number;
-  bookingCode: string;
-  clientId: number;
+  bookingCode?: string;
+  clientId?: number;
   therapistId: number | null;
   serviceOptionId: number;
-  therapistServiceId: number | null;
+  therapistServiceId?: number | null;
   status: BookingStatus;
   scheduledAt: string;
-  expectedEndAt: string;
+  expectedEndAt?: string | null;
   serviceName: string;
   durationMinutes: number;
   servicePrice: number;
-  platformFee: number;
-  taxAmount: number;
+  platformFee?: number;
+  taxAmount?: number;
   totalAmount: number;
   address: string;
-  latitude: number;
-  longitude: number;
-  clientNote: string | null;
-  acceptedAt: string | null;
-  arrivedAt: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  cancelledAt: string | null;
-  cancellationReason: string | null;
-  client?: {
-    id: number;
-    user?: BookingUser;
-  };
-  therapist?: {
-    id: number;
-    user?: BookingUser;
-  } | null;
-  statusHistories?: Array<{
-    id: number;
-    fromStatus: BookingStatus | null;
-    toStatus: BookingStatus;
-    changedByUserId: number | null;
-    reason: string | null;
-    createdAt: string;
-    changedByUser?: BookingUser | null;
-  }>;
+  latitude?: number | null;
+  longitude?: number | null;
+  clientNote?: string | null;
+  acceptedAt?: string | null;
+  arrivedAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  client?: BookingClient | null;
+  therapist?: BookingTherapist | null;
+  statusHistories?: BookingStatusHistory[];
 };
 
 export type BookingListResponse = {

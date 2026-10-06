@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppButton } from '@/components/ui/AppButton';
 import { BookingCard } from '@/components/bookings/BookingCard';
 import { LoadingState } from '@/components/common/LoadingState';
+import { AppButton } from '@/components/ui/AppButton';
+import { useBookingRealtime } from '@/hooks/useBookingRealtime';
 import type { Booking, TherapistProfile } from '@/types';
 import {
   getTherapistBookingsAPI,
@@ -21,7 +22,22 @@ import {
 } from '@/utils/api';
 import { getApiErrorMessage } from '@/utils/api-error';
 import { APP_COLOR } from '@/utils/constant';
-import { useBookingRealtime } from '@/hooks/useBookingRealtime';
+
+const ACTIVE_STATUSES = [
+  'confirmed',
+  'therapist_on_the_way',
+  'arrived',
+  'in_progress',
+] as const;
+
+const TERMINAL_STATUSES = [
+  'completed',
+  'rejected',
+  'cancelled_by_admin',
+  'cancelled_by_client',
+  'cancelled_by_therapist',
+  'expired',
+] as const;
 
 const DashboardPage = () => {
   const [profile, setProfile] = useState<TherapistProfile | null>(null);
@@ -33,7 +49,6 @@ const DashboardPage = () => {
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-
     setError(null);
 
     try {
@@ -41,7 +56,7 @@ const DashboardPage = () => {
         getTherapistProfileAPI(),
         getTherapistBookingsAPI({
           page: 1,
-          limit: 10,
+          limit: 50,
         }),
       ]);
 
@@ -68,13 +83,18 @@ const DashboardPage = () => {
   const handleToggleAccepting = async () => {
     if (!profile) return;
 
+    if (profile.verificationStatus !== 'verified') {
+      setError('Chỉ kỹ thuật viên đã xác minh mới có thể bật nhận booking.');
+      return;
+    }
+
     setUpdatingAccepting(true);
+    setError(null);
 
     try {
       const updated = await updateAcceptingBookingsAPI(
         !profile.isAcceptingBookings,
       );
-
       setProfile(updated);
     } catch (toggleError) {
       setError(getApiErrorMessage(toggleError));
@@ -83,26 +103,59 @@ const DashboardPage = () => {
     }
   };
 
-  const nextBooking =
-    bookings.find((item) =>
-      [
-        'waiting_therapist_accept',
-        'confirmed',
-        'therapist_on_the_way',
-        'arrived',
-        'in_progress',
-      ].includes(item.status),
-    ) ?? null;
+  const stats = useMemo(() => {
+    const now = new Date();
 
-  const waitingCount = bookings.filter(
-    (item) => item.status === 'waiting_therapist_accept',
-  ).length;
+    const today = bookings.filter((booking) => {
+      const value = new Date(booking.scheduledAt);
 
-  const activeCount = bookings.filter((item) =>
-    ['confirmed', 'therapist_on_the_way', 'arrived', 'in_progress'].includes(
-      item.status,
-    ),
-  ).length;
+      return (
+        value.getFullYear() === now.getFullYear() &&
+        value.getMonth() === now.getMonth() &&
+        value.getDate() === now.getDate()
+      );
+    });
+
+    const waiting = bookings.filter(
+      (booking) => booking.status === 'waiting_therapist_accept',
+    );
+
+    const active = bookings.filter((booking) =>
+      ACTIVE_STATUSES.includes(
+        booking.status as (typeof ACTIVE_STATUSES)[number],
+      ),
+    );
+
+    const completed = bookings.filter(
+      (booking) => booking.status === 'completed',
+    );
+
+    return {
+      today: today.length,
+      waiting: waiting.length,
+      active: active.length,
+      completed: completed.length,
+    };
+  }, [bookings]);
+
+  const upcoming = useMemo(() => {
+    const now = Date.now();
+
+    return bookings
+      .filter(
+        (booking) =>
+          new Date(booking.scheduledAt).getTime() >= now &&
+          !TERMINAL_STATUSES.includes(
+            booking.status as (typeof TERMINAL_STATUSES)[number],
+          ),
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.scheduledAt).getTime() -
+          new Date(b.scheduledAt).getTime(),
+      )
+      .slice(0, 5);
+  }, [bookings]);
 
   if (loading && !profile) {
     return (
@@ -111,6 +164,8 @@ const DashboardPage = () => {
       </SafeAreaView>
     );
   }
+
+  const verified = profile?.verificationStatus === 'verified';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -126,9 +181,11 @@ const DashboardPage = () => {
           />
         }>
         <View style={styles.topRow}>
-          <View>
+          <View style={styles.flex}>
             <Text style={styles.hello}>Xin chào</Text>
-            <Text style={styles.name}>{profile?.fullName || 'Kỹ thuật viên'}</Text>
+            <Text style={styles.name}>
+              {profile?.fullName || 'Kỹ thuật viên'}
+            </Text>
           </View>
 
           <View style={styles.avatar}>
@@ -143,7 +200,7 @@ const DashboardPage = () => {
             <View>
               <Text style={styles.cardEyebrow}>TRẠNG THÁI HOẠT ĐỘNG</Text>
               <Text style={styles.verification}>
-                {profile?.verificationStatus === 'verified'
+                {verified
                   ? 'Đã xác minh'
                   : profile?.verificationStatus === 'rejected'
                     ? 'Bị từ chối xác minh'
@@ -164,9 +221,11 @@ const DashboardPage = () => {
           </View>
 
           <Text style={styles.statusText}>
-            {profile?.isAcceptingBookings
-              ? 'Bạn đang nhận booking mới.'
-              : 'Bạn đang tạm ngừng nhận booking.'}
+            {verified
+              ? profile?.isAcceptingBookings
+                ? 'Bạn đang nhận booking mới.'
+                : 'Bạn đang tạm ngừng nhận booking.'
+              : 'Bạn cần được xác minh trước khi bật nhận booking.'}
           </Text>
 
           <AppButton
@@ -177,43 +236,49 @@ const DashboardPage = () => {
             }
             variant={profile?.isAcceptingBookings ? 'secondary' : 'primary'}
             loading={updatingAccepting}
+            disabled={!verified || updatingAccepting}
             onPress={handleToggleAccepting}
           />
         </View>
 
         <View style={styles.stats}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{waitingCount}</Text>
+            <Text style={styles.statValue}>{stats.today}</Text>
+            <Text style={styles.statLabel}>Hôm nay</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.waiting}</Text>
             <Text style={styles.statLabel}>Chờ nhận</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{activeCount}</Text>
+            <Text style={styles.statValue}>{stats.active}</Text>
             <Text style={styles.statLabel}>Đang làm</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{profile?.completedBookings ?? 0}</Text>
+            <Text style={styles.statValue}>{stats.completed}</Text>
             <Text style={styles.statLabel}>Hoàn thành</Text>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Booking cần chú ý</Text>
-          <Text
-            style={styles.link}
-            onPress={() => {
-              router.push('/(tabs)/bookings');
-            }}>
+          <Text style={styles.sectionTitle}>Booking sắp tới</Text>
+          <Text style={styles.link} onPress={() => router.push('/(tabs)/bookings')}>
             Xem tất cả
           </Text>
         </View>
 
-        {nextBooking ? (
-          <BookingCard booking={nextBooking} />
+        {upcoming.length ? (
+          <View style={styles.bookingList}>
+            {upcoming.map((booking) => (
+              <BookingCard key={booking.id} booking={booking} />
+            ))}
+          </View>
         ) : (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Chưa có booking đang hoạt động</Text>
+            <Text style={styles.emptyTitle}>Chưa có booking sắp tới</Text>
             <Text style={styles.emptyText}>
               Booking mới sẽ xuất hiện tại đây khi khách chọn bạn.
             </Text>
@@ -233,6 +298,9 @@ const styles = StyleSheet.create({
     padding: 18,
     paddingBottom: 110,
     gap: 18,
+  },
+  flex: {
+    flex: 1,
   },
   topRow: {
     flexDirection: 'row',
@@ -296,10 +364,12 @@ const styles = StyleSheet.create({
   },
   stats: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   statCard: {
-    flex: 1,
+    width: '48%',
+    flexGrow: 1,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
@@ -332,6 +402,9 @@ const styles = StyleSheet.create({
     color: APP_COLOR.PRIMARY,
     fontSize: 13,
     fontWeight: '800',
+  },
+  bookingList: {
+    gap: 12,
   },
   emptyCard: {
     padding: 22,

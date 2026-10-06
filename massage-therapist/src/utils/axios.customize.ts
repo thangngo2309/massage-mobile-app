@@ -66,7 +66,7 @@ const refreshAccessToken = async (): Promise<string> => {
   return accessToken;
 };
 
-api.interceptors.request.use(async (config) => {
+api.interceptors.request.use(async config => {
   const token = await AsyncStorage.getItem(StorageKeys.ACCESS_TOKEN);
 
   if (token) {
@@ -81,21 +81,24 @@ api.interceptors.request.use(async (config) => {
 });
 
 api.interceptors.response.use(
-  (response) => {
+  response => {
     if (debugEnabled) {
       console.log('[API][RES]', response.status, response.config.url);
     }
 
     return response;
   },
-  async (error) => {
+
+  async error => {
     const originalConfig = error.config as RetryConfig | undefined;
     const url = String(originalConfig?.url || '');
 
     const isAuthEndpoint =
       url.includes('/auth/login') ||
       url.includes('/auth/register') ||
-      url.includes('/auth/refresh');
+      url.includes('/auth/refresh') ||
+      url.includes('/auth/otp/send') ||
+      url.includes('/auth/otp/verify');
 
     if (
       error.response?.status !== 401 ||

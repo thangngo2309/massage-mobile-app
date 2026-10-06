@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,49 +13,52 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BookingCard } from '@/components/bookings/BookingCard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LoadingState } from '@/components/common/LoadingState';
-import {
-  matchBookingFilter,
-  type BookingFilter,
-} from '@/constants/booking.constant';
 import { useBookingRealtime } from '@/hooks/useBookingRealtime';
-import type { Booking } from '@/types';
+import type { Booking, BookingStatus } from '@/types';
 import { getTherapistBookingsAPI } from '@/utils/api';
 import { getApiErrorMessage } from '@/utils/api-error';
 import { APP_COLOR } from '@/utils/constant';
 
-const filters: Array<{ value: BookingFilter; label: string }> = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'waiting', label: 'Chờ nhận' },
-  { value: 'working', label: 'Đang làm' },
-  { value: 'completed', label: 'Hoàn thành' },
+type StatusFilter = 'all' | BookingStatus;
+
+const FILTERS: Array<{ label: string; value: StatusFilter }> = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Chờ xác nhận', value: 'waiting_therapist_accept' },
+  { label: 'Đã xác nhận', value: 'confirmed' },
+  { label: 'Đang di chuyển', value: 'therapist_on_the_way' },
+  { label: 'Đang thực hiện', value: 'in_progress' },
+  { label: 'Hoàn thành', value: 'completed' },
 ];
 
 const BookingsPage = () => {
   const [items, setItems] = useState<Booking[]>([]);
-  const [filter, setFilter] = useState<BookingFilter>('all');
+  const [status, setStatus] = useState<StatusFilter>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+  const load = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      setError(null);
 
-    setError(null);
+      try {
+        const response = await getTherapistBookingsAPI({
+          page: 1,
+          limit: 50,
+          status: status === 'all' ? undefined : status,
+        });
 
-    try {
-      const response = await getTherapistBookingsAPI({
-        page: 1,
-        limit: 100,
-      });
-
-      setItems(response.items);
-    } catch (loadError) {
-      setError(getApiErrorMessage(loadError));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+        setItems(response.items);
+      } catch (loadError) {
+        setError(getApiErrorMessage(loadError));
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [status],
+  );
 
   useEffect(() => {
     void load();
@@ -66,18 +70,13 @@ const BookingsPage = () => {
 
   useBookingRealtime(realtimeRefresh);
 
-  const filteredItems = useMemo(
-    () => items.filter((item) => matchBookingFilter(item.status, filter)),
-    [filter, items],
-  );
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        data={filteredItems}
+        data={items}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.content}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -91,21 +90,21 @@ const BookingsPage = () => {
           <View style={styles.header}>
             <Text style={styles.title}>Booking của tôi</Text>
             <Text style={styles.description}>
-              Nhận booking và cập nhật trạng thái theo quy trình phục vụ.
+              Xác nhận booking và theo dõi các lịch dịch vụ của bạn.
             </Text>
 
-            <View style={styles.filters}>
-              {filters.map((item) => {
-                const active = item.value === filter;
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filters}>
+              {FILTERS.map((item) => {
+                const active = item.value === status;
 
                 return (
                   <Pressable
                     key={item.value}
-                    onPress={() => setFilter(item.value)}
-                    style={[
-                      styles.filter,
-                      active ? styles.filterActive : null,
-                    ]}>
+                    onPress={() => setStatus(item.value)}
+                    style={[styles.filter, active ? styles.filterActive : null]}>
                     <Text
                       style={[
                         styles.filterText,
@@ -116,10 +115,9 @@ const BookingsPage = () => {
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
-
             {loading ? <LoadingState /> : null}
           </View>
         }
@@ -161,9 +159,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   filters: {
-    marginTop: 18,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    paddingTop: 18,
+    paddingBottom: 2,
     gap: 8,
   },
   filter: {
@@ -190,6 +187,9 @@ const styles = StyleSheet.create({
     marginTop: 14,
     color: APP_COLOR.DANGER,
     fontSize: 13,
+  },
+  separator: {
+    height: 12,
   },
 });
 

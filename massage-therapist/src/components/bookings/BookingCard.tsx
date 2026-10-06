@@ -2,37 +2,40 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Booking } from '@/types';
-import { formatCurrency, formatDateTime } from '@/utils/helpers';
 import { APP_COLOR } from '@/utils/constant';
+import { formatCurrency, formatDateTime } from '@/utils/helpers';
 import { BookingStatusBadge } from './BookingStatusBadge';
 
-export const BookingCard = ({ booking }: { booking: Booking }) => (
-  <Pressable
-    onPress={() => router.push(`/bookings/${booking.id}`)}
-    style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}>
-    <View style={styles.header}>
-      <Text style={styles.serviceName}>
-        {booking.serviceName}
-        {booking.durationMinutes ? ` - ${booking.durationMinutes} phút` : ''}
-      </Text>
+export const BookingCard = ({ booking }: { booking: Booking }) => {
+  const clientName =
+    booking.client?.fullName ||
+    booking.client?.user?.fullName ||
+    'Khách hàng';
 
-      <BookingStatusBadge status={booking.status} />
-    </View>
+  return (
+    <Pressable
+      onPress={() => router.push(`/bookings/${booking.id}`)}
+      style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}>
+      <View style={styles.header}>
+        <Text style={styles.serviceName}>
+          {booking.serviceName}
+          {booking.durationMinutes ? ` - ${booking.durationMinutes} phút` : ''}
+        </Text>
 
-    <Text style={styles.schedule}>{formatDateTime(booking.scheduledAt)}</Text>
+        <BookingStatusBadge status={booking.status} />
+      </View>
 
-    <Text style={styles.client}>
-      Khách: {booking.client?.user?.fullName || 'Khách hàng'}
-    </Text>
+      <Text style={styles.schedule}>{formatDateTime(booking.scheduledAt)}</Text>
+      <Text style={styles.client}>Khách: {clientName}</Text>
+      <Text style={styles.address}>{booking.address}</Text>
 
-    <Text style={styles.address}>{booking.address}</Text>
-
-    <View style={styles.footer}>
-      <Text style={styles.price}>{formatCurrency(booking.totalAmount)}</Text>
-      <Text style={styles.detail}>Xem chi tiết →</Text>
-    </View>
-  </Pressable>
-);
+      <View style={styles.footer}>
+        <Text style={styles.price}>{formatCurrency(booking.totalAmount)}</Text>
+        <Text style={styles.detail}>Xem chi tiết →</Text>
+      </View>
+    </Pressable>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {

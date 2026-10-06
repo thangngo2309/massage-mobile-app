@@ -4,6 +4,7 @@ export type TherapistProfile = {
   fullName: string;
   phone: string;
   email: string | null;
+  avatarUrl?: string | null;
   bio: string | null;
   gender: 'unknown' | 'male' | 'female' | 'other';
   dateOfBirth: string | null;
