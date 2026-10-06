@@ -30,13 +30,17 @@ const RootLayout = () => {
               },
             }}>
             <Stack.Screen name="index" />
+
             <Stack.Screen name="(auth)" />
+
             <Stack.Screen name="(tabs)" />
+
             <Stack.Screen
               name="bookings/[id]"
               options={{
                 headerShown: true,
                 title: 'Chi tiết booking',
+                headerBackButtonDisplayMode: 'minimal',
                 headerTintColor: APP_COLOR.TEXT,
                 headerStyle: {
                   backgroundColor: APP_COLOR.SURFACE,
