@@ -1,3 +1,4 @@
+
 export const APP_COLOR = {
   PRIMARY: '#0F766E',
   PRIMARY_DARK: '#064E3B',
@@ -12,3 +13,4 @@ export const APP_COLOR = {
   SUCCESS: '#047857',
   INFO: '#1D4ED8',
 } as const;
+

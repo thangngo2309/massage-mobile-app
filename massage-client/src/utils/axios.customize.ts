@@ -1,3 +1,4 @@
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { Platform } from 'react-native';
@@ -161,7 +162,10 @@ api.interceptors.response.use(
     const isAuthEndpoint =
       requestUrl.includes('/auth/login') ||
       requestUrl.includes('/auth/register') ||
-      requestUrl.includes('/auth/refresh');
+      requestUrl.includes('/auth/otp/send') ||
+      requestUrl.includes('/auth/otp/verify') ||
+      requestUrl.includes('/auth/refresh') ||
+      requestUrl.includes('/auth/logout');
 
     if (
       error.response?.status !== 401 ||
@@ -205,3 +209,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

@@ -3,3 +3,4 @@ export * from './service';
 export * from './therapist';
 export * from './booking';
 export * from './rating';
+export * from './realtime';

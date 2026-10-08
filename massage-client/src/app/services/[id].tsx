@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -125,12 +126,15 @@ const ServiceDetailPage = () => {
                     <Text style={styles.metaText}>{formatDuration(option.durationMinutes)}</Text>
                   </View>
 
-                  {option.price !== undefined && option.price !== null && (
+                  {(option.defaultPrice !== undefined && option.defaultPrice !== null) ||
+                  (option.price !== undefined && option.price !== null) ? (
                     <View style={styles.metaChip}>
                       <Ionicons name="cash-outline" size={15} color={APP_COLOR.MUTED} />
-                      <Text style={styles.metaPrice}>{formatCurrency(option.price)}</Text>
+                      <Text style={styles.metaPrice}>
+                        {formatCurrency(option.defaultPrice ?? option.price)}
+                      </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               </TouchableOpacity>
             );
@@ -178,3 +182,4 @@ const styles = StyleSheet.create({
 });
 
 export default ServiceDetailPage;
+

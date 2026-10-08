@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -185,3 +186,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomePage;
+

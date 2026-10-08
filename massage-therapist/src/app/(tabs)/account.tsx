@@ -1,5 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoadingState } from '@/components/common/LoadingState';
@@ -30,6 +37,8 @@ const getVerificationLabel = (
 };
 
 const AccountPage = () => {
+  const authUser = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
   const logout = useUserStore((state) => state.logout);
 
   const [profile, setProfile] = useState<TherapistProfile | null>(null);
@@ -106,6 +115,13 @@ const AccountPage = () => {
       setFullName(updated.fullName ?? '');
       setBio(updated.bio ?? '');
       setExperienceYears(String(updated.experienceYears ?? 0));
+
+      if (authUser) {
+        await setUser({
+          ...authUser,
+          fullName: updated.fullName,
+        });
+      }
     } catch (saveError) {
       setError(getApiErrorMessage(saveError));
     } finally {
@@ -114,7 +130,9 @@ const AccountPage = () => {
   };
 
   const toggleAccepting = async (value: boolean) => {
-    if (!profile) return;
+    if (!profile) {
+      return;
+    }
 
     if (profile.verificationStatus !== 'verified') {
       setError('Chỉ kỹ thuật viên đã xác minh mới có thể bật nhận booking.');
@@ -146,43 +164,53 @@ const AccountPage = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Tài khoản</Text>
-        <Text style={styles.description}>
-          Quản lý hồ sơ kỹ thuật viên và trạng thái nhận booking.
-        </Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}>
+        <View style={styles.headingRow}>
+          <View style={styles.headingIcon}>
+            <Ionicons name="person-outline" size={23} color={APP_COLOR.PRIMARY} />
+          </View>
+
+          <View style={styles.flex}>
+            <Text style={styles.title}>Hồ sơ kỹ thuật viên</Text>
+            <Text style={styles.description}>
+              Cập nhật thông tin hiển thị với khách hàng.
+            </Text>
+          </View>
+        </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <View style={styles.summary}>
-          <Text style={styles.summaryName}>
-            {profile?.fullName || 'Kỹ thuật viên'}
-          </Text>
-          <Text style={styles.summaryMeta}>{profile?.phone || ''}</Text>
-          {profile?.email ? (
-            <Text style={styles.summaryMeta}>{profile.email}</Text>
-          ) : null}
-
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Xác minh</Text>
-            <Text style={styles.statusValue}>
+        <View style={styles.summaryGrid}>
+          <View style={styles.statCard}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={19}
+              color={APP_COLOR.PRIMARY}
+            />
+            <Text style={styles.statLabel}>Xác minh</Text>
+            <Text style={styles.statValueSmall}>
               {getVerificationLabel(profile?.verificationStatus)}
             </Text>
           </View>
 
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Đánh giá</Text>
-            <Text style={styles.statusValue}>
-              {Number(profile?.ratingAverage ?? 0).toFixed(1)} (
-              {profile?.ratingCount ?? 0})
+          <View style={styles.statCard}>
+            <Ionicons name="star" size={19} color="#F59E0B" />
+            <Text style={styles.statLabel}>Đánh giá</Text>
+            <Text style={styles.statValue}>
+              {Number(profile?.ratingAverage ?? 0).toFixed(1)}
             </Text>
           </View>
 
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Đã hoàn thành</Text>
-            <Text style={styles.statusValue}>
-              {profile?.completedBookings ?? 0} booking
-            </Text>
+          <View style={styles.statCard}>
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={19}
+              color={APP_COLOR.PRIMARY}
+            />
+            <Text style={styles.statLabel}>Hoàn thành</Text>
+            <Text style={styles.statValue}>{profile?.completedBookings ?? 0}</Text>
           </View>
         </View>
 
@@ -190,9 +218,7 @@ const AccountPage = () => {
           <View style={styles.flex}>
             <Text style={styles.acceptTitle}>Trạng thái nhận lịch</Text>
             <Text style={styles.acceptDescription}>
-              {verified
-                ? 'Bật để sẵn sàng nhận booking mới từ khách hàng.'
-                : 'Chỉ kỹ thuật viên đã xác minh mới được bật nhận booking.'}
+              Chỉ kỹ thuật viên đã xác minh mới được bật nhận booking.
             </Text>
           </View>
 
@@ -204,39 +230,52 @@ const AccountPage = () => {
           />
         </View>
 
-        <View style={styles.form}>
+        <View style={styles.profileCard}>
           <Text style={styles.sectionTitle}>Thông tin hồ sơ</Text>
 
-          <AppInput
-            label="Họ và tên"
-            value={fullName}
-            onChangeText={setFullName}
-            maxLength={255}
-          />
+          <View style={styles.contactBox}>
+            <Text style={styles.contactName}>
+              {profile?.fullName || 'Kỹ thuật viên'}
+            </Text>
+            <Text style={styles.contactMeta}>{profile?.phone || ''}</Text>
+            {profile?.email ? (
+              <Text style={styles.contactMeta}>{profile.email}</Text>
+            ) : null}
+          </View>
 
-          <AppInput
-            label="Giới thiệu bản thân"
-            value={bio}
-            onChangeText={setBio}
-            multiline
-            maxLength={2000}
-            placeholder="Giới thiệu kinh nghiệm, phong cách phục vụ..."
-            style={styles.bioInput}
-          />
+          <View style={styles.form}>
+            <AppInput
+              label="Họ và tên"
+              value={fullName}
+              onChangeText={setFullName}
+              maxLength={255}
+            />
 
-          <AppInput
-            label="Số năm kinh nghiệm"
-            value={experienceYears}
-            onChangeText={setExperienceYears}
-            keyboardType="number-pad"
-          />
+            <AppInput
+              label="Số năm kinh nghiệm"
+              value={experienceYears}
+              onChangeText={setExperienceYears}
+              keyboardType="number-pad"
+              maxLength={2}
+            />
 
-          <AppButton
-            title="Lưu hồ sơ"
-            loading={saving}
-            disabled={saving}
-            onPress={() => void save()}
-          />
+            <AppInput
+              label="Giới thiệu bản thân"
+              value={bio}
+              onChangeText={setBio}
+              multiline
+              maxLength={2000}
+              placeholder="Giới thiệu kinh nghiệm, phong cách phục vụ..."
+              style={styles.bioInput}
+            />
+
+            <AppButton
+              title="Lưu hồ sơ"
+              loading={saving}
+              disabled={saving}
+              onPress={() => void save()}
+            />
+          </View>
         </View>
 
         {profile?.id ? (
@@ -273,16 +312,29 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headingIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: APP_COLOR.PRIMARY_LIGHT,
+  },
   title: {
     color: APP_COLOR.TEXT,
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '900',
   },
   description: {
-    marginTop: 6,
+    marginTop: 3,
     color: APP_COLOR.MUTED,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
   },
   error: {
     marginTop: 12,
@@ -290,38 +342,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  summary: {
-    marginTop: 18,
-    padding: 17,
-    borderRadius: 18,
-    backgroundColor: APP_COLOR.PRIMARY,
-    gap: 7,
+  summaryGrid: {
+    marginTop: 20,
+    flexDirection: 'row',
+    gap: 10,
   },
-  summaryName: {
-    color: '#FFFFFF',
-    fontSize: 22,
+  statCard: {
+    flex: 1,
+    minHeight: 118,
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: '#F8FAFC',
+  },
+  statLabel: {
+    marginTop: 8,
+    color: APP_COLOR.MUTED,
+    fontSize: 11,
+  },
+  statValue: {
+    marginTop: 5,
+    color: APP_COLOR.TEXT,
+    fontSize: 21,
     fontWeight: '900',
   },
-  summaryMeta: {
-    color: '#CCFBF1',
+  statValueSmall: {
+    marginTop: 5,
+    color: APP_COLOR.TEXT,
     fontSize: 13,
-  },
-  statusRow: {
-    marginTop: 3,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  statusLabel: {
-    color: '#99F6E4',
-    fontSize: 13,
-  },
-  statusValue: {
-    flexShrink: 1,
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-    textAlign: 'right',
+    lineHeight: 18,
+    fontWeight: '900',
   },
   acceptCard: {
     marginTop: 14,
@@ -345,14 +394,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
-  form: {
+  profileCard: {
     marginTop: 22,
-    gap: 14,
+    padding: 17,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: APP_COLOR.BORDER,
+    backgroundColor: APP_COLOR.SURFACE,
   },
   sectionTitle: {
     color: APP_COLOR.TEXT,
     fontSize: 19,
     fontWeight: '900',
+  },
+  contactBox: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+  },
+  contactName: {
+    color: APP_COLOR.TEXT,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  contactMeta: {
+    marginTop: 4,
+    color: APP_COLOR.MUTED,
+    fontSize: 12,
+  },
+  form: {
+    marginTop: 16,
+    gap: 14,
   },
   bioInput: {
     minHeight: 110,

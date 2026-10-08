@@ -1,3 +1,4 @@
+
 export type BookingStatus =
   | 'pending'
   | 'searching_therapist'
@@ -93,3 +94,4 @@ export type BookingListResponse = {
     totalPages: number;
   };
 };
+

@@ -1,3 +1,4 @@
+
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 
 export type AuthUser = {
@@ -87,3 +88,4 @@ export type VerifyRegistrationOtpResponse = {
 
   message: string;
 };
+

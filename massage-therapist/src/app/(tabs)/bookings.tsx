@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
@@ -21,6 +22,8 @@ import { APP_COLOR } from '@/utils/constant';
 
 type StatusFilter = 'all' | BookingStatus;
 
+const PAGE_SIZE = 10;
+
 const FILTERS: Array<{ label: string; value: StatusFilter }> = [
   { label: 'Tất cả', value: 'all' },
   { label: 'Chờ xác nhận', value: 'waiting_therapist_accept' },
@@ -33,23 +36,36 @@ const FILTERS: Array<{ label: string; value: StatusFilter }> = [
 const BookingsPage = () => {
   const [items, setItems] = useState<Booking[]>([]);
   const [status, setStatus] = useState<StatusFilter>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
     async (silent = false) => {
-      if (!silent) setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
+
       setError(null);
 
       try {
         const response = await getTherapistBookingsAPI({
-          page: 1,
-          limit: 50,
+          page,
+          limit: PAGE_SIZE,
           status: status === 'all' ? undefined : status,
         });
 
         setItems(response.items);
+        setTotalPages(Math.max(1, response.pagination.totalPages || 1));
+
+        if (
+          response.pagination.totalPages > 0 &&
+          page > response.pagination.totalPages
+        ) {
+          setPage(response.pagination.totalPages);
+        }
       } catch (loadError) {
         setError(getApiErrorMessage(loadError));
       } finally {
@@ -57,7 +73,7 @@ const BookingsPage = () => {
         setRefreshing(false);
       }
     },
-    [status],
+    [page, status],
   );
 
   useEffect(() => {
@@ -70,6 +86,15 @@ const BookingsPage = () => {
 
   useBookingRealtime(realtimeRefresh);
 
+  const changeFilter = (value: StatusFilter) => {
+    if (value === status) {
+      return;
+    }
+
+    setStatus(value);
+    setPage(1);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
@@ -80,6 +105,7 @@ const BookingsPage = () => {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
+            tintColor={APP_COLOR.PRIMARY}
             onRefresh={() => {
               setRefreshing(true);
               void load(true);
@@ -89,6 +115,7 @@ const BookingsPage = () => {
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.title}>Booking của tôi</Text>
+
             <Text style={styles.description}>
               Xác nhận booking và theo dõi các lịch dịch vụ của bạn.
             </Text>
@@ -103,7 +130,7 @@ const BookingsPage = () => {
                 return (
                   <Pressable
                     key={item.value}
-                    onPress={() => setStatus(item.value)}
+                    onPress={() => changeFilter(item.value)}
                     style={[styles.filter, active ? styles.filterActive : null]}>
                     <Text
                       style={[
@@ -117,16 +144,88 @@ const BookingsPage = () => {
               })}
             </ScrollView>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? (
+              <View style={styles.errorBox}>
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={18}
+                  color={APP_COLOR.DANGER}
+                />
+
+                <Text style={styles.error}>{error}</Text>
+
+                <Pressable onPress={() => void load()}>
+                  <Text style={styles.retry}>Thử lại</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             {loading ? <LoadingState /> : null}
           </View>
         }
         ListEmptyComponent={
           !loading ? (
             <EmptyState
-              title="Không có booking"
-              description="Không có booking phù hợp với bộ lọc hiện tại."
+              title="Chưa có booking"
+              description="Booking của khách hàng sẽ xuất hiện tại đây."
             />
+          ) : null
+        }
+        ListFooterComponent={
+          !loading && items.length > 0 && totalPages > 1 ? (
+            <View style={styles.pagination}>
+              <Pressable
+                disabled={page <= 1}
+                onPress={() => setPage((current) => Math.max(1, current - 1))}
+                style={({ pressed }) => [
+                  styles.pageButton,
+                  page <= 1 ? styles.pageButtonDisabled : null,
+                  pressed && page > 1 ? styles.pageButtonPressed : null,
+                ]}>
+                <Ionicons
+                  name="chevron-back"
+                  size={18}
+                  color={page <= 1 ? '#CBD5E1' : APP_COLOR.PRIMARY}
+                />
+                <Text
+                  style={[
+                    styles.pageButtonText,
+                    page <= 1 ? styles.pageButtonTextDisabled : null,
+                  ]}>
+                  Trước
+                </Text>
+              </Pressable>
+
+              <Text style={styles.pageInfo}>
+                Trang {page} / {totalPages}
+              </Text>
+
+              <Pressable
+                disabled={page >= totalPages}
+                onPress={() =>
+                  setPage((current) => Math.min(totalPages, current + 1))
+                }
+                style={({ pressed }) => [
+                  styles.pageButton,
+                  page >= totalPages ? styles.pageButtonDisabled : null,
+                  pressed && page < totalPages ? styles.pageButtonPressed : null,
+                ]}>
+                <Text
+                  style={[
+                    styles.pageButtonText,
+                    page >= totalPages ? styles.pageButtonTextDisabled : null,
+                  ]}>
+                  Sau
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={
+                    page >= totalPages ? '#CBD5E1' : APP_COLOR.PRIMARY
+                  }
+                />
+              </Pressable>
+            </View>
           ) : null
         }
         renderItem={({ item }) => <BookingCard booking={item} />}
@@ -183,13 +282,66 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: '#FFFFFF',
   },
-  error: {
+  errorBox: {
     marginTop: 14,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: '#FEF2F2',
+  },
+  error: {
+    flex: 1,
     color: APP_COLOR.DANGER,
     fontSize: 13,
+    lineHeight: 18,
+  },
+  retry: {
+    color: APP_COLOR.DANGER,
+    fontSize: 12,
+    fontWeight: '900',
   },
   separator: {
     height: 12,
+  },
+  pagination: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  pageButton: {
+    minHeight: 42,
+    paddingHorizontal: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: APP_COLOR.BORDER,
+    backgroundColor: APP_COLOR.SURFACE,
+  },
+  pageButtonDisabled: {
+    backgroundColor: '#F8FAFC',
+  },
+  pageButtonPressed: {
+    opacity: 0.7,
+  },
+  pageButtonText: {
+    color: APP_COLOR.PRIMARY,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  pageButtonTextDisabled: {
+    color: '#CBD5E1',
+  },
+  pageInfo: {
+    color: APP_COLOR.MUTED,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 

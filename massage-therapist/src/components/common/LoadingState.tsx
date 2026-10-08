@@ -1,3 +1,4 @@
+
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { APP_COLOR } from '@/utils/constant';
@@ -20,3 +21,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+

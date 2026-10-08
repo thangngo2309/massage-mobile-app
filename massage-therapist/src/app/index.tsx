@@ -1,3 +1,4 @@
+
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -32,3 +33,4 @@ const styles = StyleSheet.create({
 });
 
 export default RootPage;
+

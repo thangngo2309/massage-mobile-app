@@ -1,3 +1,4 @@
+
 export interface Rating {
   id: number;
   bookingId: number;
@@ -25,3 +26,4 @@ export interface UpdateRatingPayload {
   rating?: number;
   comment?: string;
 }
+

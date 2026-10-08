@@ -1,3 +1,4 @@
+
 export const StorageKeys = {
   USER: 'massage_therapist_user',
   ACCESS_TOKEN: 'massage_therapist_access_token',
@@ -7,3 +8,4 @@ export const StorageKeys = {
 export const UserRole = {
   THERAPIST: 'therapist',
 } as const;
+

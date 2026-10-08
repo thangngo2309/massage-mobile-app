@@ -1,3 +1,4 @@
+
 export type Rating = {
   id: number;
   bookingId: number;
@@ -29,3 +30,4 @@ export type TherapistRatingsResponse = {
     totalPages: number;
   };
 };
+

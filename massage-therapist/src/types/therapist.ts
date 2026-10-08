@@ -1,3 +1,4 @@
+
 export type TherapistProfile = {
   id: number;
   userId: number;
@@ -50,3 +51,4 @@ export type ScheduleException = {
   note: string | null;
   createdAt: string;
 };
+

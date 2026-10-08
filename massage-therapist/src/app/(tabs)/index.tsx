@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -427,3 +428,4 @@ const styles = StyleSheet.create({
 });
 
 export default DashboardPage;
+

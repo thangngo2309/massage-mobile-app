@@ -1,3 +1,4 @@
+
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, Tabs } from 'expo-router';
 import { useEffect } from 'react';
@@ -99,3 +100,4 @@ const TabLayout = () => {
 };
 
 export default TabLayout;
+

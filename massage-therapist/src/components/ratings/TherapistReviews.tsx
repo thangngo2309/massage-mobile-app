@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -321,3 +322,4 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 });
+

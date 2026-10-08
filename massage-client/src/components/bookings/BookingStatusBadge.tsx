@@ -1,3 +1,4 @@
+
 import { StyleSheet, Text, View } from 'react-native';
 
 import { getBookingStatusMeta } from '@/utils/booking-ui';
@@ -30,3 +31,4 @@ const styles = StyleSheet.create({
 });
 
 export default BookingStatusBadge;
+

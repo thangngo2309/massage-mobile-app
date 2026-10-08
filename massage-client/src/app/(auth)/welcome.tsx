@@ -1,3 +1,4 @@
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -113,3 +114,4 @@ const styles = StyleSheet.create({
 });
 
 export default WelcomePage;
+

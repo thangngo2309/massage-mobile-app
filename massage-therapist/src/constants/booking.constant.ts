@@ -8,29 +8,29 @@ export type BookingStatusTone =
   | 'danger';
 
 export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: 'Chờ xử lý',
+  pending: 'Đang xử lý',
   searching_therapist: 'Đang tìm kỹ thuật viên',
-  waiting_therapist_accept: 'Chờ nhận',
-  confirmed: 'Đã nhận',
-  therapist_on_the_way: 'Đang di chuyển',
-  arrived: 'Đã đến nơi',
+  waiting_therapist_accept: 'Chờ kỹ thuật viên xác nhận',
+  confirmed: 'Đã xác nhận',
+  therapist_on_the_way: 'Kỹ thuật viên đang đến',
+  arrived: 'Kỹ thuật viên đã đến',
   in_progress: 'Đang thực hiện',
   completed: 'Hoàn thành',
-  cancelled_by_client: 'Khách đã hủy',
-  cancelled_by_therapist: 'Bạn đã hủy',
+  cancelled_by_client: 'Khách hàng đã hủy',
+  cancelled_by_therapist: 'Kỹ thuật viên đã hủy',
   cancelled_by_admin: 'Hệ thống đã hủy',
-  rejected: 'Đã từ chối',
-  expired: 'Hết hạn',
+  rejected: 'Kỹ thuật viên từ chối',
+  expired: 'Đã hết hạn',
 };
 
 export const BOOKING_STATUS_TONE: Record<BookingStatus, BookingStatusTone> = {
-  pending: 'neutral',
+  pending: 'warning',
   searching_therapist: 'info',
   waiting_therapist_accept: 'warning',
-  confirmed: 'info',
+  confirmed: 'success',
   therapist_on_the_way: 'info',
   arrived: 'info',
-  in_progress: 'warning',
+  in_progress: 'info',
   completed: 'success',
   cancelled_by_client: 'danger',
   cancelled_by_therapist: 'danger',
@@ -40,12 +40,11 @@ export const BOOKING_STATUS_TONE: Record<BookingStatus, BookingStatusTone> = {
 };
 
 export const getBookingStatusLabel = (status: BookingStatus | string): string =>
-  BOOKING_STATUS_LABEL[status as BookingStatus] ?? 'Không xác định';
+  BOOKING_STATUS_LABEL[status as BookingStatus] ?? status ?? 'Không xác định';
 
 export const getBookingStatusTone = (
   status: BookingStatus | string,
-): BookingStatusTone =>
-  BOOKING_STATUS_TONE[status as BookingStatus] ?? 'neutral';
+): BookingStatusTone => BOOKING_STATUS_TONE[status as BookingStatus] ?? 'neutral';
 
 export type BookingFilter = 'all' | 'waiting' | 'working' | 'completed';
 

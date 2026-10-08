@@ -1,3 +1,4 @@
+
 export const formatNumberInput = (value: string): string => {
   const cleanValue = value.replace(/[^\d]/g, '');
   if (!cleanValue) return '';
@@ -28,3 +29,4 @@ export const formatNumber = (value: number | string): string => {
   if (!Number.isFinite(numberValue)) return '0';
   return new Intl.NumberFormat('vi-VN').format(numberValue);
 };
+

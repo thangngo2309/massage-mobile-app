@@ -1,3 +1,4 @@
+
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
@@ -351,3 +352,4 @@ export const useLocationStore = create<LocationState>(set => ({
     });
   },
 }));
+

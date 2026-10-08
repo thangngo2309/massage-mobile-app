@@ -1,3 +1,4 @@
+
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 
@@ -39,3 +40,4 @@ const AuthLayout = () => {
 };
 
 export default AuthLayout;
+

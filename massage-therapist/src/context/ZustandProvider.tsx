@@ -1,3 +1,4 @@
+
 import { useEffect, type PropsWithChildren } from 'react';
 
 import { useUserStore } from '@/store/useUserStore';
@@ -14,3 +15,4 @@ export const ZustandProvider = ({ children }: PropsWithChildren) => {
 
   return children;
 };
+

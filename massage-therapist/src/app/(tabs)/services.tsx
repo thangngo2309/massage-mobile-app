@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
@@ -33,11 +34,17 @@ const ServiceItem = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const save = async () => {
-    const numericPrice = Number(price.replace(/[^\d]/g, ''));
+  useEffect(() => {
+    setPrice(String(item.price));
+    setIsActive(item.isActive);
+  }, [item]);
 
-    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
-      setError('Giá dịch vụ không hợp lệ');
+  const numericPrice = Number(price.replace(/[^\d]/g, ''));
+  const validPrice = Number.isFinite(numericPrice) && numericPrice > 0;
+
+  const save = async () => {
+    if (!validPrice) {
+      setError('Giá dịch vụ phải lớn hơn 0.');
       return;
     }
 
@@ -63,41 +70,77 @@ const ServiceItem = ({
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.flex}>
           <Text style={styles.name}>{item.serviceName}</Text>
-          <Text style={styles.meta}>
-            {item.optionLabel || `${item.durationMinutes} phút`}
+          <Text style={styles.meta}>{item.optionLabel}</Text>
+
+          <View style={styles.durationRow}>
+            <Ionicons name="time-outline" size={16} color={APP_COLOR.PRIMARY} />
+            <Text style={styles.durationText}>{item.durationMinutes} phút</Text>
+          </View>
+        </View>
+
+        <View style={[styles.statusBadge, isActive ? styles.statusBadgeActive : null]}>
+          <Text
+            style={[
+              styles.statusBadgeText,
+              isActive ? styles.statusBadgeTextActive : null,
+            ]}>
+            {isActive ? 'Đang nhận' : 'Tạm ẩn'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.summaryBox}>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Giá mặc định</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(item.defaultPrice)}</Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Phí nền tảng</Text>
+          <Text style={styles.summaryValue}>{item.platformFeeRate}%</Text>
+        </View>
+      </View>
+
+      <View>
+        <Text style={styles.inputLabel}>Giá của bạn</Text>
+        <TextInput
+          value={price}
+          onChangeText={(value) => {
+            setPrice(value.replace(/[^\d]/g, ''));
+            setError(null);
+          }}
+          keyboardType="number-pad"
+          style={styles.input}
+          placeholder="Nhập giá dịch vụ"
+          placeholderTextColor="#94A3B8"
+        />
+      </View>
+
+      <View style={styles.activeRow}>
+        <View style={styles.flex}>
+          <Text style={styles.activeTitle}>Nhận dịch vụ này</Text>
+          <Text style={styles.activeDescription}>
+            Tắt khi bạn tạm thời không muốn nhận booking cho dịch vụ này.
           </Text>
         </View>
 
         <Switch
           value={isActive}
           onValueChange={setIsActive}
-          trackColor={{
-            true: APP_COLOR.PRIMARY,
-          }}
+          trackColor={{ false: '#CBD5E1', true: APP_COLOR.PRIMARY }}
         />
       </View>
 
-      <Text style={styles.defaultPrice}>
-        Giá mặc định: {formatCurrency(item.defaultPrice)}
-      </Text>
-
-      <TextInput
-        value={price}
-        onChangeText={setPrice}
-        keyboardType="number-pad"
-        style={styles.input}
-        placeholder="Giá KTV"
-      />
-
-      <Text style={styles.fee}>
-        Phí nền tảng: {Number(item.platformFeeRate).toFixed(2)}%
-      </Text>
-
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <AppButton title="Lưu thay đổi" loading={saving} onPress={save} />
+      <AppButton
+        title="Lưu thay đổi"
+        loading={saving}
+        disabled={saving || !validPrice}
+        onPress={() => void save()}
+      />
     </View>
   );
 };
@@ -130,12 +173,13 @@ const ServicesPage = () => {
         data={items}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.content}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.title}>Dịch vụ của tôi</Text>
+
             <Text style={styles.description}>
-              Điều chỉnh giá và bật/tắt các dịch vụ bạn đang cung cấp.
+              Quản lý giá và trạng thái nhận từng dịch vụ.
             </Text>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -146,7 +190,7 @@ const ServicesPage = () => {
           !loading ? (
             <EmptyState
               title="Chưa có dịch vụ"
-              description="Dịch vụ cần được Admin gán cho kỹ thuật viên trước."
+              description="Admin chưa gán dịch vụ nào cho tài khoản của bạn."
             />
           ) : null
         }
@@ -190,17 +234,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  flex: {
+    flex: 1,
+  },
+  separator: {
+    height: 12,
+  },
   card: {
     padding: 17,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: APP_COLOR.BORDER,
     backgroundColor: APP_COLOR.SURFACE,
-    gap: 11,
+    gap: 14,
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
   },
   name: {
@@ -213,9 +263,58 @@ const styles = StyleSheet.create({
     color: APP_COLOR.MUTED,
     fontSize: 13,
   },
-  defaultPrice: {
+  durationRow: {
+    marginTop: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  durationText: {
     color: APP_COLOR.MUTED,
+    fontSize: 12,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#F1F5F9',
+  },
+  statusBadgeActive: {
+    backgroundColor: APP_COLOR.PRIMARY_LIGHT,
+  },
+  statusBadgeText: {
+    color: APP_COLOR.MUTED,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  statusBadgeTextActive: {
+    color: APP_COLOR.PRIMARY_DARK,
+  },
+  summaryBox: {
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    gap: 10,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  summaryLabel: {
+    color: APP_COLOR.MUTED,
+    fontSize: 12,
+  },
+  summaryValue: {
+    color: APP_COLOR.TEXT,
     fontSize: 13,
+    fontWeight: '800',
+  },
+  inputLabel: {
+    marginBottom: 6,
+    color: APP_COLOR.TEXT,
+    fontSize: 13,
+    fontWeight: '800',
   },
   input: {
     minHeight: 48,
@@ -224,17 +323,31 @@ const styles = StyleSheet.create({
     borderColor: APP_COLOR.BORDER,
     paddingHorizontal: 14,
     color: APP_COLOR.TEXT,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
   },
-  fee: {
+  activeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  activeTitle: {
+    color: APP_COLOR.TEXT,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  activeDescription: {
+    marginTop: 3,
     color: APP_COLOR.MUTED,
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 16,
   },
   error: {
+    marginTop: 10,
     color: APP_COLOR.DANGER,
     fontSize: 13,
+    lineHeight: 18,
   },
 });
 

@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { router } from 'expo-router';
@@ -78,3 +79,4 @@ const styles = StyleSheet.create({
 });
 
 export default ScreenHeader;
+

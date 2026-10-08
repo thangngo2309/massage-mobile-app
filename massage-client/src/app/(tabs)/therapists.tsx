@@ -1,3 +1,4 @@
+
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
@@ -18,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppButton from '@/components/ui/AppButton';
 import { useLocationStore } from '@/store/useLocationStore';
+import { useRealtimeStore } from '@/store/useRealtimeStore';
 import type {
   Service,
   TherapistSearchParams,
@@ -81,6 +83,12 @@ const TherapistsPage = () => {
   const [loading, setLoading] = useState(false);
   const [serviceLoading, setServiceLoading] = useState(false);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [submittedQuery, setSubmittedQuery] = useState<TherapistSearchParams | null>(null);
+
+  const availabilityRevision = useRealtimeStore(state => state.availabilityRevision);
 
   const getCurrentLocation = useLocationStore(state => state.getCurrentLocation);
   const locationLoading = useLocationStore(state => state.loading);
@@ -133,6 +141,36 @@ const TherapistsPage = () => {
     setDistrictCode('');
   };
 
+  const executeSearch = async (
+    query: TherapistSearchParams,
+    targetPage: number,
+    silent = false,
+  ) => {
+    if (!silent) setLoading(true);
+    setError('');
+    setSearched(true);
+
+    try {
+      const result = await searchTherapistsAPI({
+        ...query,
+        page: targetPage,
+        limit: 12,
+      });
+
+      setItems(result.items);
+      setPage(Number(result.pagination?.page ?? targetPage));
+      setTotal(Number(result.pagination?.total ?? result.items.length));
+      setTotalPages(Number(result.pagination?.totalPages ?? (result.items.length ? 1 : 0)));
+    } catch (searchError) {
+      setItems([]);
+      setTotal(0);
+      setTotalPages(0);
+      setError(getApiErrorMessage(searchError, 'Không thể tìm kỹ thuật viên.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (!serviceId || !serviceOptionId) {
       Alert.alert('Thiếu dịch vụ', 'Vui lòng chọn dịch vụ và liệu trình trước.');
@@ -141,6 +179,19 @@ const TherapistsPage = () => {
 
     if (!date || !startTime) {
       Alert.alert('Thiếu thời gian', 'Vui lòng chọn ngày và giờ phục vụ.');
+      return;
+    }
+
+    const today = formatApiDate(new Date());
+    const currentTime = formatApiTime(new Date());
+
+    if (date < today) {
+      Alert.alert('Ngày không hợp lệ', 'Vui lòng chọn ngày từ hôm nay trở đi.');
+      return;
+    }
+
+    if (date === today && startTime <= currentTime) {
+      Alert.alert('Giờ không hợp lệ', 'Vui lòng chọn thời gian sau thời điểm hiện tại.');
       return;
     }
 
@@ -157,8 +208,6 @@ const TherapistsPage = () => {
       date,
       startTime,
       sortBy,
-      page: 1,
-      limit: 50,
       ...(hasCoordinates
         ? { latitude, longitude }
         : {
@@ -167,19 +216,16 @@ const TherapistsPage = () => {
           }),
     };
 
-    setLoading(true);
-    setError('');
-    setSearched(true);
+    setSubmittedQuery(query);
+    setPage(1);
 
-    try {
-      const result = await searchTherapistsAPI(query);
-      setItems(result.items);
-    } catch (error) {
-      setItems([]);
-      setError(getApiErrorMessage(error, 'Không thể tìm kỹ thuật viên.'));
-    } finally {
-      setLoading(false);
-    }
+    await executeSearch(query, 1);
+  };
+
+  const handlePageChange = async (nextPage: number) => {
+    if (!submittedQuery || loading || nextPage < 1 || nextPage > totalPages) return;
+
+    await executeSearch(submittedQuery, nextPage);
   };
 
   const handleDateChange = (event: DateTimePickerEvent, value?: Date) => {
@@ -195,7 +241,7 @@ const TherapistsPage = () => {
   };
 
   const openTherapist = (item: TherapistSummary) => {
-    if (!serviceId || !serviceOptionId) return;
+    if (!serviceId || !serviceOptionId || !submittedQuery) return;
 
     const therapistId = Number(item.therapistId ?? item.id);
     if (!Number.isInteger(therapistId) || therapistId <= 0) return;
@@ -203,19 +249,42 @@ const TherapistsPage = () => {
     const query = [
       `serviceId=${serviceId}`,
       `serviceOptionId=${serviceOptionId}`,
-      `date=${encodeURIComponent(date)}`,
-      `startTime=${encodeURIComponent(startTime)}`,
+      `date=${encodeURIComponent(submittedQuery.date)}`,
+      `startTime=${encodeURIComponent(submittedQuery.startTime)}`,
     ];
 
-    if (hasCoordinates) {
-      query.push(`latitude=${latitude}`, `longitude=${longitude}`);
+    if (
+      submittedQuery.latitude !== undefined &&
+      submittedQuery.longitude !== undefined
+    ) {
+      query.push(
+        `latitude=${submittedQuery.latitude}`,
+        `longitude=${submittedQuery.longitude}`,
+      );
     }
 
-    if (districtCode.trim()) query.push(`districtCode=${encodeURIComponent(districtCode.trim())}`);
-    if (provinceCode) query.push(`provinceCode=${encodeURIComponent(provinceCode)}`);
+    if (submittedQuery.districtCode) {
+      query.push(
+        `districtCode=${encodeURIComponent(submittedQuery.districtCode)}`,
+      );
+    }
+
+    if (submittedQuery.provinceCode) {
+      query.push(
+        `provinceCode=${encodeURIComponent(submittedQuery.provinceCode)}`,
+      );
+    }
 
     pushRoute(`/therapists/${therapistId}?${query.join('&')}`);
   };
+
+  useEffect(() => {
+    if (availabilityRevision <= 0 || !submittedQuery || loading) return;
+
+    void executeSearch(submittedQuery, page, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availabilityRevision]);
+
 
   if (!serviceId || !serviceOptionId) {
     return (
@@ -397,7 +466,7 @@ const TherapistsPage = () => {
           <View style={styles.resultSection}>
             <View style={styles.resultHeader}>
               <Text style={styles.sectionTitle}>Kỹ thuật viên phù hợp</Text>
-              <Text style={styles.resultCount}>{items.length} kết quả</Text>
+              <Text style={styles.resultCount}>{total} kết quả</Text>
             </View>
 
             {!items.length && !error ? (
@@ -418,7 +487,11 @@ const TherapistsPage = () => {
                   <TouchableOpacity
                     key={String(item.therapistId ?? item.id)}
                     activeOpacity={0.75}
-                    style={styles.therapistCard}
+                    disabled={item.available === false}
+                    style={[
+                      styles.therapistCard,
+                      item.available === false && styles.therapistCardDisabled,
+                    ]}
                     onPress={() => openTherapist(item)}>
                     {item.avatarUrl ? (
                       <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
@@ -432,6 +505,26 @@ const TherapistsPage = () => {
                       <View style={styles.therapistTop}>
                         <Text numberOfLines={1} style={styles.therapistName}>{name}</Text>
                         <Ionicons name="chevron-forward" size={19} color="#94A3B8" />
+                      </View>
+
+                      <View
+                        style={[
+                          styles.availabilityBadge,
+                          item.available === false && styles.availabilityBadgeUnavailable,
+                        ]}>
+                        <View
+                          style={[
+                            styles.availabilityDot,
+                            item.available === false && styles.availabilityDotUnavailable,
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            styles.availabilityText,
+                            item.available === false && styles.availabilityTextUnavailable,
+                          ]}>
+                          {item.available === false ? 'Không khả dụng' : 'Có thể đặt'}
+                        </Text>
                       </View>
 
                       <View style={styles.ratingRow}>
@@ -461,6 +554,38 @@ const TherapistsPage = () => {
                   </TouchableOpacity>
                 );
               })
+            )}
+
+            {totalPages > 1 && (
+              <View style={styles.pagination}>
+                <TouchableOpacity
+                  disabled={page <= 1 || loading}
+                  onPress={() => void handlePageChange(page - 1)}
+                  style={[
+                    styles.pageButton,
+                    (page <= 1 || loading) && styles.pageButtonDisabled,
+                  ]}>
+                  <Ionicons name="chevron-back" size={17} color={APP_COLOR.PRIMARY} />
+                  <Text style={styles.pageButtonText}>Trước</Text>
+                </TouchableOpacity>
+
+                <View style={styles.pageBadge}>
+                  <Text style={styles.pageBadgeText}>
+                    {page} / {totalPages}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  disabled={page >= totalPages || loading}
+                  onPress={() => void handlePageChange(page + 1)}
+                  style={[
+                    styles.pageButton,
+                    (page >= totalPages || loading) && styles.pageButtonDisabled,
+                  ]}>
+                  <Text style={styles.pageButtonText}>Sau</Text>
+                  <Ionicons name="chevron-forward" size={17} color={APP_COLOR.PRIMARY} />
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         )}
@@ -541,6 +666,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', padding: 14, marginBottom: 11, borderRadius: 18,
     borderWidth: 1, borderColor: APP_COLOR.BORDER, backgroundColor: APP_COLOR.SURFACE,
   },
+  therapistCardDisabled: { opacity: 0.62 },
   avatar: { width: 62, height: 62, borderRadius: 20, backgroundColor: '#E2E8F0' },
   avatarFallback: {
     width: 62, height: 62, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
@@ -549,12 +675,37 @@ const styles = StyleSheet.create({
   therapistBody: { flex: 1, marginLeft: 12 },
   therapistTop: { flexDirection: 'row', alignItems: 'center' },
   therapistName: { flex: 1, color: APP_COLOR.TEXT, fontSize: 16, fontWeight: '900' },
+  availabilityBadge: {
+    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5,
+    marginTop: 6, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999,
+    backgroundColor: '#DCFCE7',
+  },
+  availabilityBadgeUnavailable: { backgroundColor: '#F1F5F9' },
+  availabilityDot: { width: 6, height: 6, borderRadius: 999, backgroundColor: '#16A34A' },
+  availabilityDotUnavailable: { backgroundColor: '#94A3B8' },
+  availabilityText: { color: '#166534', fontSize: 10, fontWeight: '800' },
+  availabilityTextUnavailable: { color: '#64748B' },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 4 },
   ratingText: { color: APP_COLOR.TEXT, fontSize: 12, fontWeight: '800' },
   dotMeta: { color: APP_COLOR.MUTED, fontSize: 12 },
   cardMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 7 },
   smallMeta: { color: APP_COLOR.MUTED, fontSize: 12 },
   price: { marginTop: 8, color: APP_COLOR.PRIMARY, fontSize: 14, fontWeight: '900' },
+  pagination: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8,
+  },
+  pageButton: {
+    minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 13,
+    borderRadius: 12, borderWidth: 1, borderColor: APP_COLOR.BORDER, backgroundColor: APP_COLOR.SURFACE,
+  },
+  pageButtonDisabled: { opacity: 0.38 },
+  pageButtonText: { color: APP_COLOR.PRIMARY, fontSize: 13, fontWeight: '800' },
+  pageBadge: {
+    minWidth: 58, minHeight: 42, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10,
+    borderRadius: 12, backgroundColor: APP_COLOR.PRIMARY_LIGHT,
+  },
+  pageBadgeText: { color: APP_COLOR.PRIMARY_DARK, fontSize: 12, fontWeight: '900' },
 });
 
 export default TherapistsPage;
+

@@ -1,3 +1,4 @@
+
 export const formatCurrency = (
   value: number | string | null | undefined,
 ): string => {
@@ -43,3 +44,4 @@ export const normalizeVietnamPhone = (phone: string): string => {
 
   return value;
 };
+

@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 
 import { router } from 'expo-router';
@@ -539,3 +540,4 @@ const styles = StyleSheet.create({
 });
 
 export default SignupPage;
+

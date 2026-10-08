@@ -1,3 +1,4 @@
+
 import {
   ActivityIndicator,
   Pressable,
@@ -96,3 +97,4 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+

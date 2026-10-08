@@ -1,3 +1,4 @@
+
 export enum StorageKeys {
   USER = 'massage_user',
   ACCESS_TOKEN = 'massage_access_token',
@@ -8,3 +9,4 @@ export enum UserRole {
   CLIENT = 'client',
   THERAPIST = 'therapist',
 }
+

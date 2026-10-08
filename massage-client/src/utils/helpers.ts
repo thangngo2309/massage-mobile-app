@@ -1,3 +1,4 @@
+
 export const normalizeVietnamPhone = (phone: string): string => {
   const value = phone.trim().replace(/\s+/g, '');
   if (value.startsWith('+84')) return value;
@@ -92,3 +93,4 @@ export const formatDistance = (distance?: number | string | null): string => {
   if (!Number.isFinite(value)) return '';
   return `${value.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km`;
 };
+

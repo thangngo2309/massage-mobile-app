@@ -3,7 +3,12 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { StorageKeys, UserRole } from '@/constants/common.constant';
-import type { AuthResponse, AuthUser, RegisterPayload } from '@/types';
+import type {
+  AuthResponse,
+  AuthUser,
+  RegisterPayload,
+  RegisterResponse,
+} from '@/types';
 import { getAccountAPI, loginAPI, logoutAPI, registerAPI } from '@/utils/api';
 import { getApiErrorMessage } from '@/utils/api-error';
 import { replaceRoute } from '@/utils/navigation';
@@ -18,9 +23,12 @@ interface UserState {
 
   hydrate: () => Promise<void>;
   login: (login: string, password: string) => Promise<void>;
-  registerClient: (payload: Omit<RegisterPayload, 'role'>) => Promise<void>;
+  registerClient: (
+    payload: Omit<RegisterPayload, 'role'>,
+  ) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
   fetchUserProfile: () => Promise<AuthUser | null>;
+  setUser: (user: AuthUser | null) => Promise<void>;
   clearError: () => void;
 }
 
@@ -28,6 +36,22 @@ const extractTokens = (data: AuthResponse) => ({
   accessToken: data.accessToken ?? data.access_token ?? null,
   refreshToken: data.refreshToken ?? data.refresh_token ?? null,
 });
+
+const assertClient = (user?: AuthUser | null) => {
+  if (!user || user.role !== UserRole.CLIENT) {
+    throw new Error('Tài khoản này không phải tài khoản khách hàng.');
+  }
+
+  return user;
+};
+
+const clearLocalSession = async () => {
+  await AsyncStorage.multiRemove([
+    StorageKeys.ACCESS_TOKEN,
+    StorageKeys.REFRESH_TOKEN,
+    StorageKeys.USER,
+  ]);
+};
 
 const persistSession = async (data: AuthResponse) => {
   const { accessToken, refreshToken } = extractTokens(data);
@@ -56,13 +80,26 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   hydrate: async () => {
     try {
-      const [[, accessToken], [, refreshToken], [, rawUser]] = await AsyncStorage.multiGet([
-        StorageKeys.ACCESS_TOKEN,
-        StorageKeys.REFRESH_TOKEN,
-        StorageKeys.USER,
-      ]);
+      const [[, accessToken], [, refreshToken], [, rawUser]] =
+        await AsyncStorage.multiGet([
+          StorageKeys.ACCESS_TOKEN,
+          StorageKeys.REFRESH_TOKEN,
+          StorageKeys.USER,
+        ]);
 
       const cachedUser = rawUser ? (JSON.parse(rawUser) as AuthUser) : null;
+
+      if (cachedUser && cachedUser.role !== UserRole.CLIENT) {
+        await clearLocalSession();
+
+        set({
+          accessToken: null,
+          refreshToken: null,
+          user: null,
+        });
+
+        return;
+      }
 
       set({
         accessToken,
@@ -72,11 +109,21 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       if (accessToken) {
         try {
-          const user = await getAccountAPI();
+          const user = assertClient(await getAccountAPI());
+
           await AsyncStorage.setItem(StorageKeys.USER, JSON.stringify(user));
+
           set({ user });
         } catch (error) {
           console.log('[AUTH][HYDRATE][ERR]', getApiErrorMessage(error));
+
+          await clearLocalSession();
+
+          set({
+            accessToken: null,
+            refreshToken: null,
+            user: null,
+          });
         }
       }
     } catch (error) {
@@ -93,7 +140,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       const payload = {
         login: login.trim(),
         password,
-        deviceName: `${Platform.OS}-massage-in-room`,
+        deviceName: `${Platform.OS}-in-home-massage-247-client`,
       };
 
       console.log('[AUTH][LOGIN] submit', {
@@ -108,7 +155,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         throw new Error('Đăng nhập thành công nhưng API không trả access token.');
       }
 
-      const user = data.user ?? (await getAccountAPI());
+      const user = assertClient(data.user ?? (await getAccountAPI()));
 
       await AsyncStorage.setItem(StorageKeys.USER, JSON.stringify(user));
 
@@ -125,9 +172,19 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       replaceRoute('/(tabs)');
     } catch (error) {
+      await clearLocalSession();
+
       const message = getApiErrorMessage(error, 'Đăng nhập thất bại.');
+
       console.log('[AUTH][LOGIN][ERR]', message);
-      set({ error: message });
+
+      set({
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+        error: message,
+      });
+
       throw error;
     } finally {
       set({ isLoading: false });
@@ -138,34 +195,40 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const data = await registerAPI({
+      /**
+       * Backend hiện tại:
+       * - tạo client ở trạng thái inactive
+       * - gửi OTP
+       * - chưa tạo session
+       */
+      const response = await registerAPI({
         ...payload,
         role: UserRole.CLIENT,
-        deviceName: `${Platform.OS}-massage-in-room`,
+        deviceName: `${Platform.OS}-in-home-massage-247-client`,
       });
 
-      const tokens = await persistSession(data);
+      assertClient(response.user);
 
-      if (tokens.accessToken) {
-        const user = data.user ?? (await getAccountAPI());
+      set({
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+        error: null,
+      });
 
-        await AsyncStorage.setItem(StorageKeys.USER, JSON.stringify(user));
-
-        set({
-          user,
-          ...tokens,
-          error: null,
-        });
-
-        replaceRoute('/(tabs)');
-        return;
-      }
-
-      replaceRoute('/(auth)/login');
+      return response;
     } catch (error) {
       const message = getApiErrorMessage(error, 'Đăng ký thất bại.');
+
       console.log('[AUTH][REGISTER][ERR]', message);
-      set({ error: message });
+
+      set({
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+        error: message,
+      });
+
       throw error;
     } finally {
       set({ isLoading: false });
@@ -174,9 +237,12 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   fetchUserProfile: async () => {
     try {
-      const user = await getAccountAPI();
+      const user = assertClient(await getAccountAPI());
+
       await AsyncStorage.setItem(StorageKeys.USER, JSON.stringify(user));
+
       set({ user });
+
       return user;
     } catch (error) {
       console.log('[AUTH][ME][ERR]', getApiErrorMessage(error));
@@ -184,12 +250,24 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 
+  setUser: async user => {
+    if (user) {
+      assertClient(user);
+      await AsyncStorage.setItem(StorageKeys.USER, JSON.stringify(user));
+    } else {
+      await AsyncStorage.removeItem(StorageKeys.USER);
+    }
+
+    set({ user });
+  },
+
   logout: async () => {
     set({ isLoading: true, error: null });
 
     try {
       const refreshToken =
-        get().refreshToken ?? (await AsyncStorage.getItem(StorageKeys.REFRESH_TOKEN));
+        get().refreshToken ??
+        (await AsyncStorage.getItem(StorageKeys.REFRESH_TOKEN));
 
       if (refreshToken) {
         try {
@@ -199,11 +277,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         }
       }
     } finally {
-      await AsyncStorage.multiRemove([
-        StorageKeys.ACCESS_TOKEN,
-        StorageKeys.REFRESH_TOKEN,
-        StorageKeys.USER,
-      ]);
+      await clearLocalSession();
 
       set({
         user: null,

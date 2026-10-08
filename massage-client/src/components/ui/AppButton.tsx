@@ -1,3 +1,4 @@
+
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -101,3 +102,4 @@ const styles = StyleSheet.create({
 });
 
 export default AppButton;
+

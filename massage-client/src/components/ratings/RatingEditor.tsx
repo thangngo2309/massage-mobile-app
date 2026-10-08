@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -113,3 +114,4 @@ const styles = StyleSheet.create({
 });
 
 export default RatingEditor;
+
